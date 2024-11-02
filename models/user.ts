@@ -26,7 +26,7 @@ const UserSchema = new Schema<IUser>({
     enabled: { type: Boolean, required: true, default: true },
     dateOfBirth: { type: Date },
     avatarUrl: { type: String },
-    description: { type: String, maxLength: 512, minLength: 0 },
+    description: { type: String, maxLength: 512 },
     threads: {
         type: [{ type: Schema.Types.ObjectId, ref: "Thread" }],
         default: [],
