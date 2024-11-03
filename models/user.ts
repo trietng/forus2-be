@@ -17,16 +17,33 @@ interface IUser {
     comments: Types.ObjectId[];
 }
 
+export const UserConstraints = {
+    username: {
+        minLength: 4,
+        maxLength: 32
+    },
+    password: {
+        minLength: 4
+    },
+    displayName: {
+        minLength: 1,
+        maxLength: 100
+    },
+    description: {
+        maxLength: 512
+    }
+};
+
 const UserSchema = new Schema<IUser>({
-    username: { type: String, required: true, unique: true, maxLength: 20, minLength: 8 },
+    username: { type: String, required: true, unique: true, maxLength: UserConstraints.username.maxLength, minLength: UserConstraints.username.minLength },
     passwordHash: { type: String, required: true},
-    displayName: { type: String, required: true, maxLength: 100, minLength: 1 },
+    displayName: { type: String, required: true, maxLength: UserConstraints.displayName.maxLength, minLength: UserConstraints.displayName.minLength },
     email: { type: String , required: true, unique: true },
     role: { type: String, required: true, enum: UserRoleSet, default: 'ROLE_USER' },
     enabled: { type: Boolean, required: true, default: true },
     dateOfBirth: { type: Date },
     avatarUrl: { type: String },
-    description: { type: String, maxLength: 512 },
+    description: { type: String, maxLength: UserConstraints.description.maxLength, default: '' },
     threads: {
         type: [{ type: Schema.Types.ObjectId, ref: "Thread" }],
         default: [],

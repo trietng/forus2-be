@@ -1,13 +1,26 @@
 import { FastifyInstance, FastifyPluginOptions, FastifyRequest } from "fastify";
 import * as bcrypt from 'bcrypt';
 import { BackendError } from "errors";
-import { User } from "models/user";
+import { User, UserConstraints } from "models/user";
 import { JwtPayloadDto } from "dtos/request/jwt-payload.dto";
 import { LoginDto } from "dtos/request/login.dto";
 import { RegisterDto } from "dtos/request/register.dto";
 
 export async function authRoute(fastify: FastifyInstance, _: FastifyPluginOptions) {
-    fastify.post('/register', async (request: FastifyRequest<{ Body: RegisterDto }>, reply) => {
+    fastify.post('/register', {
+        schema: {
+            body: {
+                type: 'object',
+                required: ['username', 'password', 'displayName', 'email'],
+                properties: {
+                    username: { type: 'string', minLength: UserConstraints.username.minLength, maxLength: UserConstraints.username.maxLength },
+                    password: { type: 'string', minLength: UserConstraints.password.minLength },
+                    displayName: { type: 'string', minLength: UserConstraints.displayName.minLength, maxLength: UserConstraints.displayName.maxLength },
+                    email: { type: 'string', format: 'email' }
+                }
+            }
+        }
+    }, async (request: FastifyRequest<{ Body: RegisterDto }>, reply) => {
         const dto = request.body;
         const user = new User({
             username: dto.username,
@@ -19,7 +32,18 @@ export async function authRoute(fastify: FastifyInstance, _: FastifyPluginOption
         reply.send({ message: 'User registered' });
     });
     
-    fastify.post('/login', async (request: FastifyRequest<{ Body: LoginDto }>, reply) => {
+    fastify.post('/login', {
+        schema: {
+            body: {
+                type: 'object',
+                required: ['username', 'password'],
+                properties: {
+                    username: { type: 'string', minLength: UserConstraints.username.minLength, maxLength: UserConstraints.username.maxLength },
+                    password: { type: 'string', minLength: UserConstraints.password.minLength }
+                }
+            }
+        }
+    }, async (request: FastifyRequest<{ Body: LoginDto }>, reply) => {
         const dto = request.body;
         const user = await User.findOne({ username: dto.username });
         if (!user) {

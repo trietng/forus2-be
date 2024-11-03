@@ -10,6 +10,7 @@ import { BackendError } from './errors';
 import { JwtPayloadDto } from 'dtos/request/jwt-payload.dto';
 import { connect } from 'mongoose';
 import { userdetailsRoute } from 'routes/userdetails.route';
+import { resizeRoute } from 'routes/resize.route';
 
 declare module 'fastify' {
     interface FastifyRequest {
@@ -95,6 +96,7 @@ app.decorate('isAdmin', async (request: FastifyRequest, _: FastifyReply) => {
 // Register routes
 app.register(authRoute, { prefix: "v1/auth" });
 app.register(userdetailsRoute, { prefix: "v1/userdetails" });
+app.register(resizeRoute, { prefix: "v1/resize" });
 // server.register(postRoute, { prefix: 'box' });
 // server.register(userDetailRoute, { prefix: 'userdetails', preHandler: [server.authenticate] });
 
