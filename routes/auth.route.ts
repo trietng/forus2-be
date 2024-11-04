@@ -5,6 +5,7 @@ import { User, UserConstraints } from "models/user";
 import { JwtPayloadDto } from "dtos/request/jwt-payload.dto";
 import { LoginDto } from "dtos/request/login.dto";
 import { RegisterDto } from "dtos/request/register.dto";
+import { HttpMessage } from "messages";
 
 export async function authRoute(fastify: FastifyInstance, _: FastifyPluginOptions) {
     fastify.post('/register', {
@@ -47,11 +48,11 @@ export async function authRoute(fastify: FastifyInstance, _: FastifyPluginOption
         const dto = request.body;
         const user = await User.findOne({ username: dto.username });
         if (!user) {
-            throw new BackendError('invalid username or password');
+            throw new BackendError('Invalid username or password');
         }
         const isPasswordValid = await bcrypt.compare(dto.password, user.passwordHash);
         if (!isPasswordValid) {
-            throw new BackendError('invalid username or password');
+            throw new BackendError('Invalid username or password');
         }
         const payload: JwtPayloadDto = {
             id: user.id,
@@ -66,12 +67,12 @@ export async function authRoute(fastify: FastifyInstance, _: FastifyPluginOption
         cookieExpiry.setDate(cookieExpiry.getDate() + parseInt(process.env.SESSION_DURATION.split('d')[0]));
         reply.setCookie('headerPayload', headerPayload, { expires: cookieExpiry, path: '/', httpOnly: false, secure: true, sameSite: 'none', domain: process.env.DOMAIN });
         reply.setCookie('signature', signature, { expires: cookieExpiry, path: '/', httpOnly: true, secure: true, sameSite: 'none', domain: process.env.DOMAIN });
-        reply.send({ message: 'Login successful' });
+        reply.send(new HttpMessage("auth.login"));
     });
 
     fastify.delete('/logout', { preHandler: [fastify.authenticate] }, async (_, reply) => {
         reply.clearCookie('headerPayload', { domain: process.env.DOMAIN });
         reply.clearCookie('signature', { domain: process.env.DOMAIN });
-        reply.send({ message: 'Logout successful' });
+        reply.send(new HttpMessage("auth.logout"));
     });
 }

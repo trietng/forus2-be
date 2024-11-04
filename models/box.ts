@@ -1,6 +1,7 @@
 import { Schema, Types, model } from 'mongoose';
+import { ISoftDelete } from './extensions/soft-delete';
 
-interface IBox {
+interface IBox extends ISoftDelete {
     name: string;
     description: string;
     moderators: Types.ObjectId[];
@@ -23,6 +24,7 @@ const BoxSchema = new Schema<IBox>({
         type: [{ type: Schema.Types.ObjectId, ref: 'Thread'}],
         default: [],
     },
+    isDeleted: { type: Boolean, default: false }
 }, {timestamps: true});
 
 BoxSchema.index({ name: 'text', description: 'text' });

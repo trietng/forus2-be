@@ -11,6 +11,7 @@ import { JwtPayloadDto } from 'dtos/request/jwt-payload.dto';
 import { connect } from 'mongoose';
 import { userdetailsRoute } from 'routes/userdetails.route';
 import { resizeRoute } from 'routes/resize.route';
+import { groupsRoute } from 'routes/groups.route';
 
 declare module 'fastify' {
     interface FastifyRequest {
@@ -80,7 +81,7 @@ app.decorate('authenticate', async (request: FastifyRequest, _: FastifyReply) =>
     const authorization = request.headers.authorization;
     const signature = request.cookies['signature'];
     if (!authorization || !authorization.startsWith('Bearer ') || !signature) {
-        throw new BackendError('unauthorized');
+        throw new BackendError('Unauthorized');
     }
     const headerPayload = authorization.split(' ')[1];
     const accessToken = `${headerPayload}.${signature}`;
@@ -89,7 +90,7 @@ app.decorate('authenticate', async (request: FastifyRequest, _: FastifyReply) =>
 });
 app.decorate('isAdmin', async (request: FastifyRequest, _: FastifyReply) => {
     if (request.payload.role !== 'ROLE_ADMIN') {
-        throw new BackendError('forbidden');
+        throw new BackendError('Forbidden');
     }
 });
 
@@ -97,6 +98,7 @@ app.decorate('isAdmin', async (request: FastifyRequest, _: FastifyReply) => {
 app.register(authRoute, { prefix: "v1/auth" });
 app.register(userdetailsRoute, { prefix: "v1/userdetails" });
 app.register(resizeRoute, { prefix: "v1/resize" });
+app.register(groupsRoute, { prefix: "v1/groups" });
 // server.register(postRoute, { prefix: 'box' });
 // server.register(userDetailRoute, { prefix: 'userdetails', preHandler: [server.authenticate] });
 
