@@ -11,8 +11,8 @@ interface IThread {
 }
 
 const ThreadSchema = new Schema<IThread>({
-    title: { type: String, required: true, maxLength: 128, minLength: 1},
-    body: { type: String, required: true, minLength: 1},
+    title: { type: String, required: true, maxLength: 128 },
+    body: { type: String, required: true },
     upvoted: {
         type: [{ type: Schema.Types.ObjectId, ref: 'User'}],
         default: [],

@@ -17,7 +17,7 @@ interface IUser {
     comments: Types.ObjectId[];
 }
 
-export const UserConstraints = {
+export const UserConstraints: Partial<Record<keyof IUser | "password", any>> = {
     username: {
         minLength: 4,
         maxLength: 32

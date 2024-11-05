@@ -6,7 +6,7 @@ interface IGroup extends ISoftDelete {
     boxes: Types.ObjectId[];
 }
 
-export const GroupConstraints = {
+export const GroupConstraints: Partial<Record<keyof IGroup, any>> = {
     name: {
         maxLength: 128,
     }

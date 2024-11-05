@@ -1,7 +1,8 @@
 import { Schema, Types, model } from 'mongoose';
 import { ISoftDelete } from './extensions/soft-delete';
+import { ContentStatusSet, IContent } from './extensions/content';
 
-interface IBox extends ISoftDelete {
+interface IBox extends ISoftDelete, IContent {
     name: string;
     description: string;
     moderators: Types.ObjectId[];
@@ -9,9 +10,18 @@ interface IBox extends ISoftDelete {
     threads: Types.ObjectId[];
 }
 
+export const BoxConstraints: Partial<Record<keyof IBox, any>> = {
+    name: {
+        maxLength: 128,
+    },
+    description: {
+        maxLength: 512
+    },
+}
+
 const BoxSchema = new Schema<IBox>({
-    name: { type: String, required: true, unique: true, maxLength: 128, minLength: 1},
-    description: { type: String, maxLength: 512, minLength: 32},
+    name: { type: String, required: true, unique: true, maxLength: BoxConstraints.name.maxLength },
+    description: { type: String, maxLength: BoxConstraints.description.maxLength, default: '' },
     moderators: {
         type: [{ type: Schema.Types.ObjectId, ref: 'User'}],
         default: [],
@@ -24,6 +34,7 @@ const BoxSchema = new Schema<IBox>({
         type: [{ type: Schema.Types.ObjectId, ref: 'Thread'}],
         default: [],
     },
+    status: { type: String, enum: ContentStatusSet, default: "pending" },
     isDeleted: { type: Boolean, default: false }
 }, {timestamps: true});
 

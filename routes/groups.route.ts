@@ -1,12 +1,16 @@
+import { BoxDto } from "dtos/request/box.dto";
 import { GroupDto } from "dtos/request/group.dto";
 import { FastifyInstance, FastifyPluginOptions, FastifyRequest } from "fastify";
 import { HttpMessage } from "messages";
-import { Box } from "models/box";
+import { Box, BoxConstraints } from "models/box";
 import { Group, GroupConstraints } from "models/group";
 
-
 export async function groupsRoute(fastify: FastifyInstance, _: FastifyPluginOptions) {
-    fastify.get("/", { preHandler: [fastify.authenticate] }, async (_, reply) => {
+    fastify.get("/", { preHandler: [fastify.authenticate] }, async (request, reply) => {
+        let statusFilterExpression: Record<string, any> = { $in: ['$_id', '$$boxes'] };
+        if (request.payload.role === "ROLE_USER") {
+            statusFilterExpression = { $and: [{ $in: ['$_id', '$$boxes'] }, { $eq: ['$$boxes.status', 'approved'] }] };
+        }
         // get all groups with name and the thread count of each box
         const groups = await Group.aggregate([
             {
@@ -15,9 +19,17 @@ export async function groupsRoute(fastify: FastifyInstance, _: FastifyPluginOpti
             {
                 $lookup: {
                     from: 'boxes',
-                    localField: 'boxes',
-                    foreignField: '_id',
-                    as: 'boxes',
+                    // boxes that are not deleted
+                    let: { boxes: '$boxes' },
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: statusFilterExpression,
+                                isDeleted: false
+                            }
+                        },
+                    ],
+                    as: 'boxes'
                 }
             },
             {
@@ -38,6 +50,7 @@ export async function groupsRoute(fastify: FastifyInstance, _: FastifyPluginOpti
                                     _id: '$boxes._id',
                                     name: '$boxes.name',
                                     description: '$boxes.description',
+                                    status: '$boxes.status',
                                     threadCount: { $size: '$boxes.threads' },
                                 },
                                 else: '$boxes'
@@ -109,13 +122,47 @@ export async function groupsRoute(fastify: FastifyInstance, _: FastifyPluginOpti
         const session = await Group.startSession();
         try {
             await session.withTransaction(async () => {
-                const group = await Group.findByIdAndUpdate(request.params.id, { isDeleted: true });
+                const group = await Group.findByIdAndUpdate(request.params.id, { isDeleted: true }, { session: session });
                 // soft delete all boxes in the group
-                await Box.updateMany({ _id: { $in: group.boxes } }, { isDeleted: true });
+                await Box.updateMany({ _id: { $in: group.boxes } }, { isDeleted: true }, { session: session });
             });
             reply.send(new HttpMessage("group.delete"));
         }
         finally {
+            session.endSession();
+        }
+    });
+
+    // create a new box in the group
+    fastify.post("/:id/box", {
+        preHandler: [fastify.authenticate],
+        schema: {
+            params: {
+                type: 'object',
+                required: ['id'],
+                properties: {
+                    id: { type: 'string' }
+                }
+            },
+            body: {
+                required: ['name', 'description'],
+                properties: {
+                    name: { type: 'string', maxLength: BoxConstraints.name.maxLength },
+                    description: { type: 'string', maxLength: BoxConstraints.description.maxLength }
+                }
+            }
+        }
+    }, async (request: FastifyRequest<{ Body: BoxDto, Params: { id: string } }>, reply) => {
+        const session = await Box.startSession();
+        try {
+            await session.withTransaction(async () => {
+                const box = new Box(request.body);
+                await box.save({ session: session });
+                // Add the box to the group
+                await Group.findByIdAndUpdate(request.params.id, { $push: { boxes: box._id } }, { session: session });
+                reply.status(201).send(box);
+            });
+        } finally {
             session.endSession();
         }
     });
