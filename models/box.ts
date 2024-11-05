@@ -1,8 +1,7 @@
 import { Schema, Types, model } from 'mongoose';
 import { ISoftDelete } from './extensions/soft-delete';
-import { ContentStatusSet, IContent } from './extensions/content';
 
-interface IBox extends ISoftDelete, IContent {
+interface IBox extends ISoftDelete {
     name: string;
     description: string;
     moderators: Types.ObjectId[];
@@ -34,7 +33,6 @@ const BoxSchema = new Schema<IBox>({
         type: [{ type: Schema.Types.ObjectId, ref: 'Thread'}],
         default: [],
     },
-    status: { type: String, enum: ContentStatusSet, default: "pending" },
     isDeleted: { type: Boolean, default: false }
 }, {timestamps: true});
 

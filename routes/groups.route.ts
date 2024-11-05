@@ -7,10 +7,6 @@ import { Group, GroupConstraints } from "models/group";
 
 export async function groupsRoute(fastify: FastifyInstance, _: FastifyPluginOptions) {
     fastify.get("/", { preHandler: [fastify.authenticate] }, async (request, reply) => {
-        let statusFilterExpression: Record<string, any> = { $in: ['$_id', '$$boxes'] };
-        if (request.payload.role === "ROLE_USER") {
-            statusFilterExpression = { $and: [{ $in: ['$_id', '$$boxes'] }, { $eq: ['$$boxes.status', 'approved'] }] };
-        }
         // get all groups with name and the thread count of each box
         const groups = await Group.aggregate([
             {
@@ -24,7 +20,7 @@ export async function groupsRoute(fastify: FastifyInstance, _: FastifyPluginOpti
                     pipeline: [
                         {
                             $match: {
-                                $expr: statusFilterExpression,
+                                $expr: { $in: ['$_id', '$$boxes'] },
                                 isDeleted: false
                             }
                         },
