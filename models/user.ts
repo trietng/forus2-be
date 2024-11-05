@@ -15,6 +15,7 @@ interface IUser {
     dateOfBirth?: Date;
     threads: Types.ObjectId[];
     comments: Types.ObjectId[];
+    subscribedBoxes: Types.ObjectId[];
 }
 
 export const UserConstraints: Partial<Record<keyof IUser | "password", any>> = {
@@ -50,6 +51,10 @@ const UserSchema = new Schema<IUser>({
     },
     comments: {
         type: [{ type: Schema.Types.ObjectId, ref: "Comment" }],
+        default: [],
+    },
+    subscribedBoxes: {
+        type: [{ type: Schema.Types.ObjectId, ref: "Box" }],
         default: [],
     }
 }, { timestamps: true });

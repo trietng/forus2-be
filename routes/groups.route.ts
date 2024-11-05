@@ -6,7 +6,7 @@ import { Box, BoxConstraints } from "models/box";
 import { Group, GroupConstraints } from "models/group";
 
 export async function groupsRoute(fastify: FastifyInstance, _: FastifyPluginOptions) {
-    fastify.get("/", { preHandler: [fastify.authenticate] }, async (request, reply) => {
+    fastify.get("/", { preHandler: [fastify.authenticate] }, async (_, reply) => {
         // get all groups with name and the thread count of each box
         const groups = await Group.aggregate([
             {
@@ -41,13 +41,15 @@ export async function groupsRoute(fastify: FastifyInstance, _: FastifyPluginOpti
                     boxes: { 
                         $push: {
                             $cond: {
-                                if: { $isArray: '$boxes.threads' },
+                                // if the box is not null, then return the box with the thread count
+                                if: { $and: [{ $isArray: '$boxes.threads' }, { $isArray: '$boxes.subscribers' }] },
                                 then: {
                                     _id: '$boxes._id',
                                     name: '$boxes.name',
                                     description: '$boxes.description',
                                     status: '$boxes.status',
                                     threadCount: { $size: '$boxes.threads' },
+                                    subscriberCount: { $size: '$boxes.subscribers' }
                                 },
                                 else: '$boxes'
                             }

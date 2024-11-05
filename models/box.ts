@@ -7,6 +7,7 @@ interface IBox extends ISoftDelete {
     moderators: Types.ObjectId[];
     bannedUsers: Types.ObjectId[];
     threads: Types.ObjectId[];
+    subscribers: Types.ObjectId[];
 }
 
 export const BoxConstraints: Partial<Record<keyof IBox, any>> = {
@@ -31,6 +32,10 @@ const BoxSchema = new Schema<IBox>({
     },
     threads: {
         type: [{ type: Schema.Types.ObjectId, ref: 'Thread'}],
+        default: [],
+    },
+    subscribers: {
+        type: [{ type: Schema.Types.ObjectId, ref: 'User'}],
         default: [],
     },
     isDeleted: { type: Boolean, default: false }
