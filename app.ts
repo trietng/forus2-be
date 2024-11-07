@@ -12,6 +12,7 @@ import { connect } from 'mongoose';
 import { userdetailsRoute } from 'routes/userdetails.route';
 import { resizeRoute } from 'routes/resize.route';
 import { groupsRoute } from 'routes/groups.route';
+import { boxesRoute } from 'routes/boxes.route';
 
 declare module 'fastify' {
     interface FastifyRequest {
@@ -99,6 +100,7 @@ app.register(authRoute, { prefix: "v1/auth" });
 app.register(userdetailsRoute, { prefix: "v1/userdetails" });
 app.register(resizeRoute, { prefix: "v1/resize" });
 app.register(groupsRoute, { prefix: "v1/groups" });
+app.register(boxesRoute, { prefix: "v1/boxes" });
 // server.register(postRoute, { prefix: 'box' });
 // server.register(userDetailRoute, { prefix: 'userdetails', preHandler: [server.authenticate] });
 

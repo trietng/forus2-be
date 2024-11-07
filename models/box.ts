@@ -4,6 +4,7 @@ import { ISoftDelete } from './extensions/soft-delete';
 interface IBox extends ISoftDelete {
     name: string;
     description: string;
+    group: Types.ObjectId;
     moderators: Types.ObjectId[];
     bannedUsers: Types.ObjectId[];
     threads: Types.ObjectId[];
@@ -22,6 +23,7 @@ export const BoxConstraints: Partial<Record<keyof IBox, any>> = {
 const BoxSchema = new Schema<IBox>({
     name: { type: String, required: true, unique: true, maxLength: BoxConstraints.name.maxLength },
     description: { type: String, maxLength: BoxConstraints.description.maxLength, default: '' },
+    group: { type: Schema.Types.ObjectId, ref: 'Group' },
     moderators: {
         type: [{ type: Schema.Types.ObjectId, ref: 'User'}],
         default: [],

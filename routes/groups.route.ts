@@ -4,6 +4,7 @@ import { FastifyInstance, FastifyPluginOptions, FastifyRequest } from "fastify";
 import { HttpMessage } from "messages";
 import { Box, BoxConstraints } from "models/box";
 import { Group, GroupConstraints } from "models/group";
+import { Types } from "mongoose";
 
 export async function groupsRoute(fastify: FastifyInstance, _: FastifyPluginOptions) {
     fastify.get("/", { preHandler: [fastify.authenticate] }, async (_, reply) => {
@@ -48,7 +49,16 @@ export async function groupsRoute(fastify: FastifyInstance, _: FastifyPluginOpti
                                     name: '$boxes.name',
                                     description: '$boxes.description',
                                     status: '$boxes.status',
-                                    threadCount: { $size: '$boxes.threads' },
+                                    threadCount: { 
+                                        // count the threads that are not deleted
+                                        $size: { 
+                                            $filter: {
+                                                input: '$boxes.threads',
+                                                as: 'thread',
+                                                cond: { $eq: ['$$thread.isDeleted', false] }
+                                            }
+                                        }
+                                    },
                                     subscriberCount: { $size: '$boxes.subscribers' }
                                 },
                                 else: '$boxes'
@@ -155,6 +165,7 @@ export async function groupsRoute(fastify: FastifyInstance, _: FastifyPluginOpti
         try {
             await session.withTransaction(async () => {
                 const box = new Box(request.body);
+                box.group = new Types.ObjectId(request.params.id);
                 await box.save({ session: session });
                 // Add the box to the group
                 await Group.findByIdAndUpdate(request.params.id, { $push: { boxes: box._id } }, { session: session });
