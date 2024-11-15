@@ -49,16 +49,7 @@ export async function groupsRoute(fastify: FastifyInstance, _: FastifyPluginOpti
                                     name: '$boxes.name',
                                     description: '$boxes.description',
                                     status: '$boxes.status',
-                                    threadCount: { 
-                                        // count the threads that are not deleted
-                                        $size: { 
-                                            $filter: {
-                                                input: '$boxes.threads',
-                                                as: 'thread',
-                                                cond: { $eq: ['$$thread.isDeleted', false] }
-                                            }
-                                        }
-                                    },
+                                    threadCount: { $size: '$boxes.threads'},
                                     subscriberCount: { $size: '$boxes.subscribers' }
                                 },
                                 else: '$boxes'

@@ -1,11 +1,10 @@
-import { group } from "console";
-import { BoxDto } from "dtos/request/box.dto";
 import { FastifyInstance, FastifyPluginOptions, FastifyRequest } from "fastify";
+import { Types } from "mongoose";
 import { Box, BoxConstraints } from "models/box";
 import { User } from "models/user";
-import{ Types } from "mongoose";
+import { BoxDto } from "dtos/request/box.dto";
 
-const THREADS_PER_PAGE = 10;
+const THREADS_PER_PAGE = 1;
 
 export async function boxesRoute(fastify: FastifyInstance, _: FastifyPluginOptions) {
     fastify.get("/:id/:page", {
@@ -86,10 +85,12 @@ export async function boxesRoute(fastify: FastifyInstance, _: FastifyPluginOptio
                     name: { $first: "$name" },
                     description: { $first: "$description" },
                     group: { $first: "$group" },
+                    subscribers: { $first: "$subscribers" },
+                    moderators: { $first: "$moderators" },
                     threads: {
                         $push: {
                             $cond: {
-                                if: { $and: [{ $eq: ["$threads.isDeleted", false] }, { $ne: ["$threads", {}] }] },
+                                if: { $ne: ["$threads", {}] },
                                 then: {
                                     _id: "$threads._id",
                                     title: "$threads.title",
@@ -130,6 +131,8 @@ export async function boxesRoute(fastify: FastifyInstance, _: FastifyPluginOptio
                             $divide: [{ $size: "$threads" }, THREADS_PER_PAGE],
                         },
                     },
+                    subscriberCount: { $size: "$subscribers" },
+                    threadCount: { $size: "$threads" },
                 },
             },
             {
@@ -142,6 +145,7 @@ export async function boxesRoute(fastify: FastifyInstance, _: FastifyPluginOptio
                         _id: 1,
                         name: 1
                     },
+                    moderators: 1,
                     threads: {
                         $slice: [
                             {
@@ -154,6 +158,8 @@ export async function boxesRoute(fastify: FastifyInstance, _: FastifyPluginOptio
                             THREADS_PER_PAGE
                         ]
                     },
+                    threadCount: 1,
+                    subscriberCount: 1
                 },
             },
         ]);
