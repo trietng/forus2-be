@@ -16,16 +16,8 @@ export async function groupsRoute(fastify: FastifyInstance, _: FastifyPluginOpti
             {
                 $lookup: {
                     from: 'boxes',
-                    // boxes that are not deleted
-                    let: { boxes: '$boxes' },
-                    pipeline: [
-                        {
-                            $match: {
-                                $expr: { $in: ['$_id', '$$boxes'] },
-                                isDeleted: false
-                            }
-                        },
-                    ],
+                    localField: 'boxes',
+                    foreignField: '_id',
                     as: 'boxes'
                 }
             },

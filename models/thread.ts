@@ -10,9 +10,15 @@ interface IThread {
     box: Types.ObjectId;
 }
 
+export const ThreadConstraints: Partial<Record<keyof IThread, any>> = {
+    title: {
+        maxLength: 128
+    },
+}
+
 const ThreadSchema = new Schema<IThread>({
-    title: { type: String, required: true, maxLength: 128 },
-    body: { type: String, required: true },
+    title: { type: String, required: true, maxLength: ThreadConstraints.title.maxLength, set: (str: string) => str === "" ? undefined : str },
+    body: { type: String, required: true, set: (str: string) => str === "" ? undefined : str },
     upvoted: {
         type: [{ type: Schema.Types.ObjectId, ref: 'User'}],
         default: [],

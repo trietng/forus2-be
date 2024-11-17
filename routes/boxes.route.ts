@@ -3,8 +3,31 @@ import { Types } from "mongoose";
 import { Box, BoxConstraints } from "models/box";
 import { User } from "models/user";
 import { BoxDto } from "dtos/request/box.dto";
+import { Group } from "models/group";
+import { HttpMessage } from "messages";
+import { BackendError } from "errors";
 
 const THREADS_PER_PAGE = 1;
+
+function validatePatchBody(body: any): boolean {
+    for (const key in body) {
+        switch (key) {
+            case 'name':
+                if (typeof body.name !== 'string' || body.name.length < BoxConstraints.name.minLength || body.name.length > BoxConstraints.name.maxLength) {
+                    return false;
+                }
+                break;
+            case 'description':
+                if (typeof body.description !== 'string' || body.description.length > BoxConstraints.description.maxLength) {
+                    return false;
+                }
+                break;
+            default:
+                return false;
+        }
+    }
+    return true;
+}
 
 export async function boxesRoute(fastify: FastifyInstance, _: FastifyPluginOptions) {
     fastify.get("/:id/:page", {
@@ -170,5 +193,64 @@ export async function boxesRoute(fastify: FastifyInstance, _: FastifyPluginOptio
         }
     });
 
-    
+    fastify.patch("/:id", { 
+        preHandler: [fastify.authenticate],
+        schema: {
+            params: {
+                type: 'object',
+                required: ['id'],
+                properties: {
+                    id: { type: 'string' }
+                }
+            }
+        }
+    }, async (request: FastifyRequest<{ Params: { id: string } }>, reply) => {
+        // Manual validation
+        if (validatePatchBody(request.body)) {
+            // if user is admin, continue
+            if (request.payload.role === "ROLE_ADMIN") {
+                await Box.findByIdAndUpdate(request.params.id, request.body);
+            } else {
+                const box = await Box.findById(request.params.id);
+                if (box.moderators.includes(new Types.ObjectId(request.payload.id))) {
+                    if (Object.keys(request.body).includes("name")) {
+                        throw new BackendError("Forbidden");
+                    } else {
+                        await Box.findByIdAndUpdate(request.params.id, request.body);
+                    }
+                }
+
+            }
+            reply.send({ message: 'User details updated' });
+        }
+        else {
+            reply.status(400).send({ message: 'Invalid user details update request' });
+        }
+    });
+
+    fastify.delete("/:id", { 
+        preHandler: [fastify.authenticate, fastify.isAdmin],
+        schema: {
+            params: {
+                type: 'object',
+                required: ['id'],
+                properties: {
+                    id: { type: 'string' }
+                }
+            }
+        }
+    }, async (request: FastifyRequest<{ Params: { id: string } }>, reply) => {
+        const session = await Box.startSession();
+        try {
+            await session.withTransaction(async () => {
+                const box = await Box.findByIdAndUpdate(request.params.id, { isDeleted: true }, { session: session });
+                // remove box from group
+                await Group.updateOne({ _id: box.group }, { $pull: { boxes: box._id } }, { session: session });
+            });
+            reply.send(new HttpMessage("box.delete"));
+        }
+        finally {
+            session.endSession();
+        }
+    });
 }
