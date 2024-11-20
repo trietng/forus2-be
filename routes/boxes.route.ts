@@ -2,10 +2,11 @@ import { FastifyInstance, FastifyPluginOptions, FastifyRequest } from "fastify";
 import { Types } from "mongoose";
 import { Box, BoxConstraints } from "models/box";
 import { User } from "models/user";
-import { BoxDto } from "dtos/request/box.dto";
 import { Group } from "models/group";
 import { HttpMessage } from "messages";
 import { BackendError } from "errors";
+import { ThreadDto } from "dtos/request/thread.dto";
+import { Thread, ThreadConstraints } from "models/thread";
 
 const THREADS_PER_PAGE = 1;
 
@@ -117,6 +118,7 @@ export async function boxesRoute(fastify: FastifyInstance, _: FastifyPluginOptio
                                 then: {
                                     _id: "$threads._id",
                                     title: "$threads.title",
+                                    body: "$threads.body",
                                     author: "$threads.author",
                                     score: {
                                         $subtract: [
@@ -250,6 +252,44 @@ export async function boxesRoute(fastify: FastifyInstance, _: FastifyPluginOptio
             reply.send(new HttpMessage("box.delete"));
         }
         finally {
+            session.endSession();
+        }
+    });
+
+    fastify.post("/:id/thread", {
+        preHandler: [fastify.authenticate],
+        schema: {
+            params: {
+                type: 'object',
+                required: ['id'],
+                properties: {
+                    id: { type: 'string' }
+                }
+            },
+            body: {
+                required: ['title', 'body'],
+                properties: {
+                    title: { type: 'string', maxLength: ThreadConstraints.title.maxLength },
+                    body: { type: 'string' }
+                }
+            }
+        }
+    }, async (request: FastifyRequest<{ Body: ThreadDto, Params: { id: string } }>, reply) => {
+        const session = await Thread.startSession();
+        try {
+            await session.withTransaction(async () => {
+                const thread = new Thread({
+                    title: request.body.title,
+                    body: request.body.body,
+                    author: request.payload.id,
+                    box: request.params.id
+                });
+                await thread.save({ session: session });
+                // Add the box to the group
+                await Box.findByIdAndUpdate(request.params.id, { $push: { threads: thread._id } }, { session: session });
+                reply.status(201).send(thread);
+            });
+        } finally {
             session.endSession();
         }
     });
