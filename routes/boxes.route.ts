@@ -7,9 +7,8 @@ import { HttpMessage } from "messages";
 import { BackendError } from "errors";
 import { ThreadDto } from "dtos/request/thread.dto";
 import { Thread, ThreadConstraints } from "models/thread";
-import { subscribe } from "diagnostics_channel";
 
-const THREADS_PER_PAGE = 2;
+const THREADS_PER_PAGE = 10;
 
 function validatePatchBody(body: any): boolean {
     for (const key in body) {
@@ -215,7 +214,7 @@ export async function boxesRoute(fastify: FastifyInstance, _: FastifyPluginOptio
             },
         ]);
         if (box.length === 0 || (box[0].pageCount < page && box[0].pageCount !== 0)) {
-            reply.status(404).send({ message: "Page not found" });
+            throw new BackendError("Resource not found");
         } else {
             reply.send(box[0]);
         }
