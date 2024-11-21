@@ -9,10 +9,11 @@ import { authRoute } from 'routes/auth.route';
 import { BackendError } from './errors';
 import { JwtPayloadDto } from 'dtos/request/jwt-payload.dto';
 import { connect } from 'mongoose';
-import { userdetailsRoute } from 'routes/userdetails.route';
+import { usersRoute } from 'routes/users.route';
 import { resizeRoute } from 'routes/resize.route';
 import { groupsRoute } from 'routes/groups.route';
 import { boxesRoute } from 'routes/boxes.route';
+import { threadsRoute } from 'routes/threads.route';
 
 declare module 'fastify' {
     interface FastifyRequest {
@@ -97,11 +98,10 @@ app.decorate('isAdmin', async (request: FastifyRequest, _: FastifyReply) => {
 
 // Register routes
 app.register(authRoute, { prefix: "v1/auth" });
-app.register(userdetailsRoute, { prefix: "v1/userdetails" });
+app.register(usersRoute, { prefix: "v1/users" });
 app.register(resizeRoute, { prefix: "v1/resize" });
 app.register(groupsRoute, { prefix: "v1/groups" });
 app.register(boxesRoute, { prefix: "v1/boxes" });
-// server.register(postRoute, { prefix: 'box' });
-// server.register(userDetailRoute, { prefix: 'userdetails', preHandler: [server.authenticate] });
+app.register(threadsRoute, { prefix: "v1/threads" });
 
 export default app;

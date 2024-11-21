@@ -1,4 +1,5 @@
-import { FastifyInstance, FastifyPluginOptions } from "fastify";
+import { BackendError } from "errors";
+import { FastifyInstance, FastifyPluginOptions, FastifyRequest } from "fastify";
 import { User, UserConstraints } from "models/user";
 
 function validatePatchBody(body: any): boolean {
@@ -37,17 +38,43 @@ function validatePatchBody(body: any): boolean {
     return true;
 }
 
-export async function userdetailsRoute(fastify: FastifyInstance, _: FastifyPluginOptions) {    
-    fastify.get('/', { preHandler: [fastify.authenticate] }, async (request, reply) => {
-        const user = await User.findById(request.payload.id, { _id: 0, displayName: 1, email: 1, description: 1, dateOfBirth: 1, createdAt: 1 });
+export async function usersRoute(fastify: FastifyInstance, _: FastifyPluginOptions) {    
+    fastify.get('/:id', { 
+        preHandler: [fastify.authenticate],
+        schema: {
+            params: {
+                type: "object",
+                required: ["id"],
+                properties: {
+                    id: { type: "string" },
+                }
+            }
+        }
+    }, async (request: FastifyRequest<{ Params: { id: string } }>, reply) => {
+        const user = await User.findById(request.params.id, { _id: 0, displayName: 1, email: 1, description: 1, dateOfBirth: 1, createdAt: 1 });
         reply.send(user);
     });
 
-    fastify.patch('/', { preHandler: [fastify.authenticate] }, async (request, reply) => {
+    fastify.patch('/:id', { 
+        preHandler: [fastify.authenticate],
+        schema: {
+            params: {
+                type: "object",
+                required: ["id"],
+                properties: {
+                    id: { type: "string" },
+                }
+            }
+        }
+    }, async (request: FastifyRequest<{ Params: { id: string } }>, reply) => {
         // Manual validation
         if (validatePatchBody(request.body)) {
-            await User.findByIdAndUpdate(request.payload.id, request.body);
-            reply.send({ message: 'User details updated' });
+            if (request.payload.id === request.params.id) {
+                await User.findByIdAndUpdate(request.payload.id, request.body);
+                reply.send({ message: 'User details updated' });
+            } else {
+                throw new BackendError("Forbidden");
+            }
         }
         else {
             reply.status(400).send({ message: 'Invalid user details update request' });

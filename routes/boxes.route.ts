@@ -7,8 +7,9 @@ import { HttpMessage } from "messages";
 import { BackendError } from "errors";
 import { ThreadDto } from "dtos/request/thread.dto";
 import { Thread, ThreadConstraints } from "models/thread";
+import { subscribe } from "diagnostics_channel";
 
-const THREADS_PER_PAGE = 1;
+const THREADS_PER_PAGE = 2;
 
 function validatePatchBody(body: any): boolean {
     for (const key in body) {
@@ -92,7 +93,7 @@ export async function boxesRoute(fastify: FastifyInstance, _: FastifyPluginOptio
                     let: { id: "$threads.author" },
                     pipeline: [
                         { $match: { $expr: { $eq: ["$_id", "$$id"] } } },
-                        { $project: { _id: 1, fullname: 1, avatarUrl: 1 } },
+                        { $project: { _id: 1, displayName: 1, avatarUrl: 1 } },
                     ],
                     as: "threads.author",
                 },
@@ -158,6 +159,13 @@ export async function boxesRoute(fastify: FastifyInstance, _: FastifyPluginOptio
                     },
                     subscriberCount: { $size: "$subscribers" },
                     threadCount: { $size: "$threads" },
+                    subscriberStatus: {
+                        $cond: {
+                            if: { $in: [user._id, "$subscribers"] },
+                            then: true,
+                            else: false,
+                        },
+                    }
                 },
             },
             {
@@ -184,7 +192,8 @@ export async function boxesRoute(fastify: FastifyInstance, _: FastifyPluginOptio
                         ]
                     },
                     threadCount: 1,
-                    subscriberCount: 1
+                    subscriberCount: 1,
+                    subscriberStatus: 1
                 },
             },
         ]);
@@ -289,6 +298,36 @@ export async function boxesRoute(fastify: FastifyInstance, _: FastifyPluginOptio
                 await Box.findByIdAndUpdate(request.params.id, { $push: { threads: thread._id } }, { session: session });
                 reply.status(201).send(thread);
             });
+        } finally {
+            session.endSession();
+        }
+    });
+
+    fastify.put("/:id/subscribe", {
+        preHandler: [fastify.authenticate],
+        schema: {
+            params: {
+                type: 'object',
+                required: ['id'],
+                properties: {
+                    id: { type: 'string' }
+                }
+            }
+        }
+    }, async (request: FastifyRequest<{ Params: { id: string } }>, reply) => {
+        const isSubscribed = await Box.exists({ _id: request.params.id, subscribers: request.payload.id });
+        const session = await Box.startSession();
+        try {
+            await session.withTransaction(async () => {
+                if (isSubscribed) {
+                    await Box.updateOne({ _id: request.params.id }, { $pull: { subscribers: request.payload.id } }, { session: session });
+                    await User.updateOne({ _id: request.payload.id }, { $pull: { subscribedBoxes: request.params.id } }, { session: session });
+                } else {
+                    await Box.updateOne({ _id: request.params.id }, { $push: { subscribers: request.payload.id } }, { session: session });
+                    await User.updateOne({ _id: request.payload.id }, { $push: { subscribedBoxes: request.params.id } }, { session: session });
+                }
+            });
+            reply.status(200).send({ subscriberStatus: !isSubscribed });
         } finally {
             session.endSession();
         }
