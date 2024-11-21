@@ -1,6 +1,8 @@
 import { Schema, Types, model } from 'mongoose';
+import { ISoftDelete } from './extensions/soft-delete';
+import { IVisibility } from './extensions/visibility';
 
-interface IThread {
+interface IThread extends ISoftDelete, IVisibility {
     title: string;
     body: string;
     upvoted: Types.ObjectId[];
@@ -33,6 +35,8 @@ const ThreadSchema = new Schema<IThread>({
     },
     author: { type: Schema.Types.ObjectId, ref: 'User'},
     box: { type: Schema.Types.ObjectId, ref: 'Box'},
+    visibility: { type: Boolean, default: false },
+    isDeleted: { type: Boolean, default: false }
 }, {timestamps: true});
 
 ThreadSchema.index({ title: 'text', body: 'text' });

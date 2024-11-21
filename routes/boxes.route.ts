@@ -57,7 +57,17 @@ export async function boxesRoute(fastify: FastifyInstance, _: FastifyPluginOptio
         let order = request.query.order || "createdAt";
         let direction = request.query.direction === "asc" ? 1 : -1;
         let box: any[];
-        const user = await User.findById(request.payload.id);
+        const userId = new Types.ObjectId(request.payload.id);
+        const threadLookupExpr = request.payload.role === "ROLE_ADMIN" ? 
+        {
+            $in: ["$_id", "$$localThreads"]
+        } :
+        {
+            $and: [
+                { $in: ["$_id", "$$localThreads"] },
+                { $eq: ["$visibility", true] }
+            ]
+        };
         box = await Box.aggregate([
             // Match the box and not deleted
             { $match: { _id: new Types.ObjectId(id), isDeleted: false } },
@@ -71,14 +81,20 @@ export async function boxesRoute(fastify: FastifyInstance, _: FastifyPluginOptio
                 },
             },
             {
-                $unwind: "$group",
+                $unwind: "$group"
             },
             {
                 $lookup: {
                     from: "threads",
-                    localField: "threads",
-                    foreignField: "_id",
-                    as: "threads",
+                    let: { localThreads: "$threads" },
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: threadLookupExpr
+                            }
+                        }
+                    ],
+                    as: "threads"
                 },
             },
             {
@@ -130,17 +146,18 @@ export async function boxesRoute(fastify: FastifyInstance, _: FastifyPluginOptio
                                     commentCount: { $size: "$threads.comments" },
                                     voteStatus: {
                                         $cond: {
-                                            if: { $in: [user._id, "$threads.upvoted"] },
+                                            if: { $in: [userId, "$threads.upvoted"] },
                                             then: 1,
                                             else: {
                                                 $cond: {
-                                                    if: { $in: [user._id, "$threads.downvoted"] },
+                                                    if: { $in: [userId, "$threads.downvoted"] },
                                                     then: -1,
                                                     else: 0,
                                                 },
                                             },
                                         },
                                     },
+                                    visibility: "$threads.visibility",
                                     createdAt: "$threads.createdAt",
                                     updatedAt: "$threads.updatedAt",
                                 },
@@ -161,7 +178,7 @@ export async function boxesRoute(fastify: FastifyInstance, _: FastifyPluginOptio
                     threadCount: { $size: "$threads" },
                     subscriberStatus: {
                         $cond: {
-                            if: { $in: [user._id, "$subscribers"] },
+                            if: { $in: [userId, "$subscribers"] },
                             then: true,
                             else: false,
                         },
@@ -220,22 +237,28 @@ export async function boxesRoute(fastify: FastifyInstance, _: FastifyPluginOptio
         if (validatePatchBody(request.body)) {
             // if user is admin, continue
             if (request.payload.role === "ROLE_ADMIN") {
-                await Box.findByIdAndUpdate(request.params.id, request.body);
+                const result = await Box.findByIdAndUpdate(request.params.id, request.body);
+                if (!result) {
+                    throw new BackendError("Resource not found");
+                }
             } else {
                 const box = await Box.findById(request.params.id);
                 if (box.moderators.includes(new Types.ObjectId(request.payload.id))) {
                     if (Object.keys(request.body).includes("name")) {
                         throw new BackendError("Forbidden");
                     } else {
-                        await Box.findByIdAndUpdate(request.params.id, request.body);
+                        const result = await Box.findByIdAndUpdate(request.params.id, request.body);
+                        if (!result) {
+                            throw new BackendError("Resource not found");
+                        }
                     }
+                } else {
+                    throw new BackendError("Forbidden");
                 }
-
             }
-            reply.send({ message: 'User details updated' });
-        }
-        else {
-            reply.status(400).send({ message: 'Invalid user details update request' });
+            reply.send(new HttpMessage("box.update"));
+        } else {
+            throw new BackendError("Bad request");
         }
     });
 
@@ -286,18 +309,22 @@ export async function boxesRoute(fastify: FastifyInstance, _: FastifyPluginOptio
     }, async (request: FastifyRequest<{ Body: ThreadDto, Params: { id: string } }>, reply) => {
         const session = await Thread.startSession();
         try {
+            const thread = new Thread({
+                title: request.body.title,
+                body: request.body.body,
+                author: request.payload.id,
+                box: request.params.id
+            });
+            let result: any;
             await session.withTransaction(async () => {
-                const thread = new Thread({
-                    title: request.body.title,
-                    body: request.body.body,
-                    author: request.payload.id,
-                    box: request.params.id
-                });
                 await thread.save({ session: session });
                 // Add the box to the group
-                await Box.findByIdAndUpdate(request.params.id, { $push: { threads: thread._id } }, { session: session });
-                reply.status(201).send(thread);
+                result = await Box.findOneAndUpdate({ _id: request.params.id, isDeleted: true }, { $push: { threads: thread._id } }, { session: session });
+                if (!result) {
+                    throw new BackendError("Resource not found");
+                }
             });
+            reply.status(201).send(thread);
         } finally {
             session.endSession();
         }
@@ -315,7 +342,11 @@ export async function boxesRoute(fastify: FastifyInstance, _: FastifyPluginOptio
             }
         }
     }, async (request: FastifyRequest<{ Params: { id: string } }>, reply) => {
-        const isSubscribed = await Box.exists({ _id: request.params.id, subscribers: request.payload.id });
+        const box = await Box.findOne({ _id: request.params.id, isDeleted: false });
+        if (!box) {
+            throw new BackendError("Resource not found");
+        }
+        const isSubscribed = box.subscribers.includes(new Types.ObjectId(request.payload.id));
         const session = await Box.startSession();
         try {
             await session.withTransaction(async () => {

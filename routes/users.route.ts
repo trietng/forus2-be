@@ -1,5 +1,6 @@
 import { BackendError } from "errors";
 import { FastifyInstance, FastifyPluginOptions, FastifyRequest } from "fastify";
+import { HttpMessage } from "messages";
 import { User, UserConstraints } from "models/user";
 
 function validatePatchBody(body: any): boolean {
@@ -70,14 +71,17 @@ export async function usersRoute(fastify: FastifyInstance, _: FastifyPluginOptio
         // Manual validation
         if (validatePatchBody(request.body)) {
             if (request.payload.id === request.params.id) {
-                await User.findByIdAndUpdate(request.payload.id, request.body);
-                reply.send({ message: 'User details updated' });
+                const result = await User.findByIdAndUpdate(request.payload.id, request.body);
+                if (!result) {
+                    throw new BackendError("Resource not found");
+                }
+                reply.send(new HttpMessage("user.update"));
             } else {
                 throw new BackendError("Forbidden");
             }
         }
         else {
-            reply.status(400).send({ message: 'Invalid user details update request' });
+            throw new BackendError("Bad request"); 
         }
     });
 }

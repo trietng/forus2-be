@@ -1,8 +1,7 @@
 import { Schema, Types, model } from 'mongoose';
 import { ISoftDelete } from './extensions/soft-delete';
-import { IVisibility } from './extensions/visibility';
 
-interface IBox extends ISoftDelete, IVisibility {
+export interface IBox extends ISoftDelete {
     name: string;
     description: string;
     group: Types.ObjectId;
@@ -41,7 +40,6 @@ const BoxSchema = new Schema<IBox>({
         type: [{ type: Schema.Types.ObjectId, ref: 'User'}],
         default: [],
     },
-    visibility: { type: Boolean, default: true },
     isDeleted: { type: Boolean, default: false }
 }, {timestamps: true});
 
