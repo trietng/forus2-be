@@ -1,6 +1,6 @@
 import { Schema, Types, model } from 'mongoose';
 
-export const UserRoleSet = <const> ['ROLE_USER', 'ROLE_ADMIN', 'ROLE_SYSTEM'];
+export const UserRoleSet = <const> ['ROLE_USER', 'ROLE_ADMIN'];
 export type UserRole = typeof UserRoleSet[number];
 
 export interface IUser {

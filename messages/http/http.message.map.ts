@@ -1,6 +1,7 @@
 export type HttpMessageKey = 
 "auth.login" |
 "auth.logout" |
+"auth.register" |
 "user.update" |
 "group.delete" |
 "box.update" |
@@ -11,6 +12,7 @@ export type HttpMessageKey =
 export const HttpMessageMap: Record<HttpMessageKey, string> = {
     "auth.login": "Login successfully",
     "auth.logout": "Logout successfully",
+    "auth.register": "Registration successful",
     "user.update": "User updated successfully",
     "group.delete": "Group deleted successfully",
     "box.update": "Box updated successfully",

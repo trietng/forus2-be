@@ -2,8 +2,9 @@ import { BackendError } from "errors";
 import { FastifyInstance, FastifyPluginOptions, FastifyRequest } from "fastify";
 import { HttpMessage } from "messages";
 import { UserService } from "services/user.service";
+import { Identity } from "utils/identity";
 import { userPatchBodyValidator } from "validators/user.patch-body.validator";
-import { validate } from "validators/validate";
+import { Validator } from "validators/validator";
 
 export async function usersRoute(fastify: FastifyInstance, _: FastifyPluginOptions) {    
     fastify.get('/:id', { 
@@ -35,12 +36,10 @@ export async function usersRoute(fastify: FastifyInstance, _: FastifyPluginOptio
         }
     }, async (request: FastifyRequest<{ Params: { id: string } }>, reply) => {
         // Manual validation
-        if (validate(request.body).using(userPatchBodyValidator)) {
-            if (request.payload.id === request.params.id) {
+        if (Validator.validate(request.body).using(userPatchBodyValidator)) {
+            if (Identity.of(request.payload).isMe(request.params.id)) {
                 await UserService.partialUpdateUser(request.params.id, request.body);
                 reply.send(new HttpMessage("user.update"));
-            } else {
-                throw new BackendError("Forbidden");
             }
         }
     });

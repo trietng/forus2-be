@@ -1,6 +1,6 @@
 import { Schema, Types, model } from 'mongoose';
-import { ISoftDelete } from './extensions/soft-delete';
-import { IVisibility } from './extensions/visibility';
+import { ISoftDelete } from './common/soft-delete';
+import { IVisibility } from './common/visibility';
 
 interface IComment extends ISoftDelete, IVisibility {
     body: string;
@@ -29,3 +29,5 @@ const CommentSchema = new Schema<IComment>({
 }, {timestamps: true});
 
 export const Comment = model<IComment>('Comment', CommentSchema);
+
+export const CommentPageSize = 10;

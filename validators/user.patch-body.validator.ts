@@ -1,4 +1,4 @@
-import { CustomValidatorFunction } from "./validate";
+import { CustomValidatorFunction } from "./validator";
 import { UserConstraints } from "models/user";
 
 export const userPatchBodyValidator: CustomValidatorFunction = (body: any) => {

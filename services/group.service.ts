@@ -1,4 +1,5 @@
 import { GroupDto } from "dtos/request/group.dto";
+import { BackendError } from "errors";
 import { Box } from "models/box";
 import { Group } from "models/group";
 import { Types } from "mongoose";
@@ -60,11 +61,21 @@ export class GroupService {
         return await group.save();
     }
 
+    static async updateGroup(id: string, groupDto: GroupDto) {
+        const result = await Group.findOneAndUpdate({ _id: id, isDeleted: false }, groupDto, { new: true });
+        if (!result) {
+            throw new BackendError("Resource not found");
+        }
+    }
+
     static async deleteGroup(id: string) {
         const session = await Group.startSession();
         try {
             await session.withTransaction(async () => {
-                const group = await Group.findByIdAndUpdate(id, { isDeleted: true }, { session: session });
+                const group = await Group.findOneAndUpdate({ _id: id, isDeleted: false }, { isDeleted: true }, { session: session });
+                if (!group) {
+                    throw new BackendError("Resource not found");
+                }
                 // soft delete all boxes in the group
                 await Box.updateMany({ _id: { $in: group.boxes } }, { isDeleted: true }, { session: session });
             });

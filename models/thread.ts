@@ -1,8 +1,9 @@
 import { Schema, Types, model } from 'mongoose';
-import { ISoftDelete } from './extensions/soft-delete';
-import { IVisibility } from './extensions/visibility';
+import { ISoftDelete } from './common/soft-delete';
+import { IVisibility } from './common/visibility';
+import { ISortOption } from './common/sort-option';
 
-interface IThread extends ISoftDelete, IVisibility {
+export interface IThread extends ISoftDelete, IVisibility {
     title: string;
     body: string;
     upvoted: Types.ObjectId[];
@@ -42,3 +43,9 @@ const ThreadSchema = new Schema<IThread>({
 ThreadSchema.index({ title: 'text', body: 'text' });
 
 export const Thread = model<IThread>('Thread', ThreadSchema);
+
+export const ThreadSortableFieldSet = <const> ["createdAt", "updatedAt", "score", "commentCount", "title"]
+export type ThreadSortableField = typeof ThreadSortableFieldSet[number];
+export type ThreadSortOption = ISortOption<ThreadSortableField>;
+
+export const ThreadPageSize = 10;

@@ -7,8 +7,8 @@ export class UserService {
         return await User.findById(id, { _id: 0, displayName: 1, email: 1, description: 1, dateOfBirth: 1, createdAt: 1 });
     }
 
-    static async partialUpdateUser(id: string, body: any) {
-        const result = await User.findByIdAndUpdate(id, body);
+    static async partialUpdateUser(id: string, patchBody: any) {
+        const result = await User.findByIdAndUpdate(id, patchBody);
         if (!result) {
             throw new BackendError("Resource not found");
         }

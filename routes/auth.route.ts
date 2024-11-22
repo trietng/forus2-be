@@ -20,8 +20,8 @@ export async function authRoute(fastify: FastifyInstance, _: FastifyPluginOption
             }
         }
     }, async (request: FastifyRequest<{ Body: RegisterDto }>, reply) => {
-        AuthService.register(request.body);
-        reply.send({ message: 'User registered' });
+        await AuthService.register(request.body);
+        reply.send(new HttpMessage("auth.register"));
     });
     
     fastify.post('/login', {

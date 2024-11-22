@@ -3,7 +3,7 @@ import { GroupDto } from "dtos/request/group.dto";
 import { FastifyInstance, FastifyPluginOptions, FastifyRequest } from "fastify";
 import { HttpMessage } from "messages";
 import { BoxConstraints } from "models/box";
-import { Group, GroupConstraints } from "models/group";
+import { GroupConstraints } from "models/group";
 import { BoxService } from "services/box.service";
 import { GroupService } from "services/group.service";
 
@@ -48,7 +48,7 @@ export async function groupsRoute(fastify: FastifyInstance, _: FastifyPluginOpti
             }
         }
     }, async (request: FastifyRequest<{ Params: { id: string }, Body: GroupDto }>, reply) => {
-        const group = await Group.findOneAndUpdate({ _id: request.params.id, isDeleted: false }, request.body, { new: true });
+        const group = await GroupService.updateGroup(request.params.id, request.body);
         reply.send(group);
     });
 

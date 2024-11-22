@@ -1,5 +1,5 @@
 import { Schema, Types, model } from 'mongoose';
-import { ISoftDelete } from './extensions/soft-delete';
+import { ISoftDelete } from './common/soft-delete';
 
 export interface IGroup extends ISoftDelete {
     name: string;
