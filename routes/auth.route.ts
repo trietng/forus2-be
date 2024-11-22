@@ -1,11 +1,9 @@
 import { FastifyInstance, FastifyPluginOptions, FastifyRequest } from "fastify";
-import * as bcrypt from 'bcrypt';
-import { BackendError } from "errors";
-import { User, UserConstraints } from "models/user";
-import { JwtPayloadDto } from "dtos/request/jwt-payload.dto";
+import { UserConstraints } from "models/user";
 import { LoginDto } from "dtos/request/login.dto";
 import { RegisterDto } from "dtos/request/register.dto";
 import { HttpMessage } from "messages";
+import { AuthService } from "services/auth.service";
 
 export async function authRoute(fastify: FastifyInstance, _: FastifyPluginOptions) {
     fastify.post('/register', {
@@ -22,14 +20,7 @@ export async function authRoute(fastify: FastifyInstance, _: FastifyPluginOption
             }
         }
     }, async (request: FastifyRequest<{ Body: RegisterDto }>, reply) => {
-        const dto = request.body;
-        const user = new User({
-            username: dto.username,
-            passwordHash: await bcrypt.hash(dto.password, parseInt(process.env.SALT_ROUNDS)),
-            displayName: dto.displayName,
-            email: dto.email
-        });
-        await user.save();
+        AuthService.register(request.body);
         reply.send({ message: 'User registered' });
     });
     
@@ -45,21 +36,7 @@ export async function authRoute(fastify: FastifyInstance, _: FastifyPluginOption
             }
         }
     }, async (request: FastifyRequest<{ Body: LoginDto }>, reply) => {
-        const dto = request.body;
-        const user = await User.findOne({ username: dto.username });
-        if (!user) {
-            throw new BackendError('Invalid username or password');
-        }
-        const isPasswordValid = await bcrypt.compare(dto.password, user.passwordHash);
-        if (!isPasswordValid) {
-            throw new BackendError('Invalid username or password');
-        }
-        const payload: JwtPayloadDto = {
-            id: user.id,
-            username: user.username,
-            role: user.role,
-            avatarUrl: user.avatarUrl
-        };
+        const payload = await AuthService.login(request.body);
         const accessToken = request.jwt.sign(payload, { expiresIn: process.env.SESSION_DURATION }).split('.');
         const headerPayload = accessToken[0] + '.' + accessToken[1];
         const signature = accessToken[2];

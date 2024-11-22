@@ -1,7 +1,7 @@
 import { Schema, Types, model } from 'mongoose';
 import { ISoftDelete } from './extensions/soft-delete';
 
-interface IGroup extends ISoftDelete {
+export interface IGroup extends ISoftDelete {
     name: string;
     boxes: Types.ObjectId[];
 }

@@ -1,8 +1,7 @@
 import { FastifyInstance, FastifyPluginOptions, FastifyRequest } from "fastify";
-import sharp from "sharp";
-import { Readable } from "stream";
 import caching from "@fastify/caching";
 import { ResizeDto } from "dtos/request/resize.dto";
+import { ResizeService } from "services/resize.service";
 
 export async function resizeRoute(fastify: FastifyInstance, _: FastifyPluginOptions) {
     fastify.register(caching, {
@@ -23,12 +22,9 @@ export async function resizeRoute(fastify: FastifyInstance, _: FastifyPluginOpti
             }
         }
     }, async (request: FastifyRequest<{ Querystring: ResizeDto }>, reply) => {
-        const originalReply = await fetch(request.query.url);
-        const buffer = await sharp(await originalReply.arrayBuffer()).resize(null, request.query.height).toBuffer();
-        // return a blob
-        const stream = Readable.from(buffer);
+        const [stream, header] = await ResizeService.resizeImage(request.query.url, request.query.height);
         // set the headers
-        reply.header('content-type', originalReply.headers.get('content-type'));
+        reply.header('content-type', header);
         // MUST return the stream
         return reply.send(stream);
     });
