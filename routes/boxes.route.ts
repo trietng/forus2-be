@@ -318,7 +318,7 @@ export async function boxesRoute(fastify: FastifyInstance, _: FastifyPluginOptio
             await session.withTransaction(async () => {
                 await thread.save({ session: session });
                 // Add the box to the group
-                result = await Box.findOneAndUpdate({ _id: request.params.id, isDeleted: true }, { $push: { threads: thread._id } }, { session: session });
+                result = await Box.findOneAndUpdate({ _id: request.params.id, isDeleted: false }, { $push: { threads: thread._id } }, { session: session });
                 if (!result) {
                     throw new BackendError("Resource not found");
                 }
