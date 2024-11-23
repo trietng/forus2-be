@@ -1,6 +1,6 @@
 import { CommentDto } from "dtos/request/comment.dto";
 import { BackendError } from "errors";
-import { Comment } from "models/comment";
+import { Comment, CommentPageSize } from "models/comment";
 import { IThread, Thread } from "models/thread";
 import { Types } from "mongoose";
 
@@ -98,5 +98,50 @@ export class CommentService {
             voteStatus = -1;
         }
         return { voteStatus };
+    }
+
+    static async findRelativeLocationInThread(id: string) {
+        const comment = await Comment.aggregate([
+            { $match: { _id: new Types.ObjectId(id) } },
+            { 
+                $lookup: {
+                    from: 'threads',
+                    let: { 'thread_id': '$thread' },
+                    pipeline: [
+                        { $match: { $expr: { $eq: [ '$_id', '$$thread_id' ] } } },
+                        {
+                            $lookup: {
+                                from: 'comments',
+                                let: { 'comment_id': '$comments' },
+                                pipeline: [
+                                    { $match: { $expr: { $in: [ '$_id', '$$comment_id' ] } } },
+                                    { $sort: { createdAt: 1 } },
+                                    { $project: { _id: 1 } }
+                                ],
+                                as: 'comments'
+                            },
+                        },
+                        { $project: { _id: 1, comments: 1 } },
+                    ],
+                    as: 'thread'
+                }
+            },
+            { $unwind: '$thread' },
+            { 
+                $addFields: {
+                    page: {
+                        $ceil: {
+                            $divide: [
+                                { $indexOfArray: [ '$thread.comments._id', '$_id' ] },
+                                CommentPageSize
+                            ]
+                        }
+                    }
+                }
+            },
+            { $project: { _id: 1, thread: { _id: 1 }, page: 1 } }
+        ]);
+        comment[0].page++;
+        return comment[0];
     }
 }

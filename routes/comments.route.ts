@@ -6,6 +6,22 @@ import { contentPatchBodyValidator } from "validators/content.patch-body.validat
 import { Validator } from "validators/validator";
 
 export async function commentsRoute(fastify: FastifyInstance, _: FastifyPluginOptions) {
+    fastify.get("/:id/locate", {
+        preHandler: [fastify.authenticate],
+        schema: {
+            params: {
+                type: 'object',
+                required: ['id'],
+                properties: {
+                    id: { type: 'string' }
+                }
+            }
+        }
+    }, async (request: FastifyRequest<{ Params: { id: string } }>, reply) => {
+        const comment = await CommentService.findRelativeLocationInThread(request.params.id);
+        reply.send(comment);
+    });
+
     fastify.patch("/:id", {
         preHandler: [fastify.authenticate],
         schema: {

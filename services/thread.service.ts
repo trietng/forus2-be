@@ -92,7 +92,8 @@ export class ThreadService {
                     from: 'comments',
                     let: { "replyTo": "$comments.replyTo" },
                     pipeline: [
-                        { $match: { $expr: { $eq: ["$_id", "$$replyTo"] } } },
+                        // reply must be not deleted and visible
+                        { $match: { $expr: { $and: [{ $eq: ["$_id", "$$replyTo"] }, { $eq: ["$isDeleted", false] }, { $eq: ["$visibility", true] }] } } },
                         {
                             $lookup: {
                                 from: "users",
