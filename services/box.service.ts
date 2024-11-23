@@ -16,21 +16,11 @@ export class BoxService {
         return result;
     }
 
-    static async getBox(id: string, page: number, limit: number, sortOption: ThreadSortOption, onlyVisible: boolean, userId: string) {
+    static async getBox(id: string, page: number, limit: number, sortOption: ThreadSortOption, userId: string) {
         if (isNaN(page)) {
             page = 1;
         }
         const aggregatableSortOption = SortUtils.parseAggregatableSortOption(sortOption);
-        const threadLookupExpr = onlyVisible ?
-        {
-            $and: [
-                { $in: ["$_id", "$$localThreads"] },
-                { $eq: ["$visibility", true] }
-            ]
-        } :
-        {
-            $in: ["$_id", "$$localThreads"]
-        };
         const userObjectId = new Types.ObjectId(userId);
         const box = await Box.aggregate([
             // Match the box and not deleted
@@ -54,7 +44,9 @@ export class BoxService {
                     pipeline: [
                         {
                             $match: {
-                                $expr: threadLookupExpr
+                                $expr: {
+                                    $in: ["$_id", "$$localThreads"]
+                                }
                             }
                         }
                     ],

@@ -1,6 +1,6 @@
 import { CustomValidatorFunction } from "./validator";
 
-export const threadPatchBodyValidator: CustomValidatorFunction = (body: any) => {
+export const contentPatchBodyValidator: CustomValidatorFunction = (body: any) => {
     for (const key in body) {
         switch (key) {
             case 'body':

@@ -14,6 +14,9 @@ export class ThreadService {
     }
 
     static async getThread(id: string, page: number, limit: number, userId: string) {
+        if (isNaN(page)) {
+            page = 1;
+        }
         const userObjectId = new Types.ObjectId(userId);
         const thread = await Thread.aggregate([
             { $match: { _id: new Types.ObjectId(id), isDeleted: false } },
@@ -23,7 +26,7 @@ export class ThreadService {
                     localField: 'box',
                     foreignField: '_id',
                     pipeline: [
-                        { $project: { _id: 1, name: 1, group: 1 } }
+                        { $project: { _id: 1, name: 1, moderators: 1, group: 1 } }
                     ],
                     as: 'box'
                 }
@@ -45,13 +48,21 @@ export class ThreadService {
             {
                 $unwind: "$box.group"
             },
-            {                    
+            {
                 $lookup: {
-                    from: 'comments',
-                    localField: '_id',
-                    foreignField: 'thread',
-                    as: 'comments'
-                }
+                    from: "comments",
+                    let: { localComments: "$comments" },
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: {
+                                    $in: ["$_id", "$$localComments"]
+                                }
+                            }
+                        }
+                    ],
+                    as: "comments"
+                },
             },
             {
                 $unwind: {
@@ -65,7 +76,7 @@ export class ThreadService {
                     let: { "id": "$comments.author" },
                     pipeline: [
                         { $match: { $expr: { $eq: ["$_id", "$$id"] } } },
-                        { $project: { _id: 1, fullname: 1, avatarUrl: 1 } }
+                        { $project: { _id: 1, displayName: 1, avatarUrl: 1, role: 1 } }
                     ],
                     as: "comments.author",
                 },
@@ -88,7 +99,7 @@ export class ThreadService {
                                 let: { "id": "$author" },
                                 pipeline: [
                                     { $match: { $expr: { $eq: ["$_id", "$$id"] } } },
-                                    { $project: { _id: 1, fullname: 1 } }
+                                    { $project: { _id: 1, displayName: 1 } }
                                 ],
                                 as: "author"
                             }

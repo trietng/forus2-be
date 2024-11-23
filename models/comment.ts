@@ -2,7 +2,7 @@ import { Schema, Types, model } from 'mongoose';
 import { ISoftDelete } from './common/soft-delete';
 import { IVisibility } from './common/visibility';
 
-interface IComment extends ISoftDelete, IVisibility {
+export interface IComment extends ISoftDelete, IVisibility {
     body: string;
     upvoted: Types.ObjectId[];
     downvoted: Types.ObjectId[];
@@ -24,7 +24,7 @@ const CommentSchema = new Schema<IComment>({
     author: { type: Schema.Types.ObjectId, ref: 'User'},
     replyTo: { type: Schema.Types.ObjectId, ref: 'Comment'},
     thread: { type: Schema.Types.ObjectId, ref: 'Thread'},
-    visibility: { type: Boolean, default: false},
+    visibility: { type: Boolean, default: true },
     isDeleted: { type: Boolean, default: false},
 }, {timestamps: true});
 

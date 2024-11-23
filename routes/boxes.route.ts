@@ -34,8 +34,11 @@ export async function boxesRoute(fastify: FastifyInstance, _: FastifyPluginOptio
             field: request.query.order,
             direction: request.query.direction
         };
-        const onlyVisible = request.payload.role !== "ROLE_ADMIN";
-        const box = await BoxService.getBox(request.params.id, request.params.page, ThreadPageSize, sortOption, onlyVisible, request.payload.id);
+        const box = await BoxService.getBox(request.params.id, request.params.page, ThreadPageSize, sortOption, request.payload.id);
+        const identity = IdentityBuilder.new().addPayload(request.payload).addModerators(box.moderators).build();
+        if (!identity.hasRole("ROLE_ADMIN", true) && !identity.isModerator(true)) {
+            box.threads = box.threads.filter((thread: any) => thread.visibility);
+        }
         reply.send(box);
     });
 

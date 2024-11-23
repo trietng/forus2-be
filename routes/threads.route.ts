@@ -1,9 +1,11 @@
+import { CommentDto } from "dtos/request/comment.dto";
 import { FastifyInstance, FastifyPluginOptions, FastifyRequest } from "fastify";
 import { HttpMessage } from "messages";
 import { CommentPageSize } from "models/comment";
+import { CommentService } from "services/comment.service";
 import { ThreadService } from "services/thread.service";
 import { IdentityBuilder } from "utils/identity";
-import { threadPatchBodyValidator } from "validators/thread.patch-body.validator";
+import { contentPatchBodyValidator } from "validators/content.patch-body.validator";
 import { Validator } from "validators/validator";
 
 export async function threadsRoute(fastify: FastifyInstance, _: FastifyPluginOptions) {
@@ -20,7 +22,11 @@ export async function threadsRoute(fastify: FastifyInstance, _: FastifyPluginOpt
             }
         }
     }, async (request: FastifyRequest<{ Params: { id: string, page: number } }>, reply) => {
-        const thread = await ThreadService.getThread(request.params.id, request.params.page, CommentPageSize, request.payload.id);
+        let thread = await ThreadService.getThread(request.params.id, request.params.page, CommentPageSize, request.payload.id);
+        const identity = IdentityBuilder.new().addPayload(request.payload).addModerators(thread.box.moderators).build();
+        if (!identity.hasRole("ROLE_ADMIN", true) && !identity.isModerator(true)) {
+            thread.comments = thread.comments.filter((comment: any) => comment.visibility);
+        }
         reply.send(thread);
     });
     
@@ -37,7 +43,7 @@ export async function threadsRoute(fastify: FastifyInstance, _: FastifyPluginOpt
         }
     }, async (request: FastifyRequest<{ Params: { id: string } }>, reply) => {
         // Manual validation
-        if (Validator.validate(request.body).using(threadPatchBodyValidator)) {
+        if (Validator.validate(request.body).using(contentPatchBodyValidator)) {
             const thread = await ThreadService.getThreadByIdWithBox(request.params.id);
             const identity = IdentityBuilder.new().addPayload(request.payload).addTarget(thread).addModerators(thread.box.moderators).build();
             const isAuthor = identity.isMe(thread.author, true);
@@ -68,7 +74,7 @@ export async function threadsRoute(fastify: FastifyInstance, _: FastifyPluginOpt
     }, async (request: FastifyRequest<{ Params: { id: string } }>, reply) => {
         const thread = await ThreadService.getThreadByIdWithBox(request.params.id);
         const identity = IdentityBuilder.new().addPayload(request.payload).addModerators(thread.box.moderators).build();
-        if (identity.isMe(thread.author) || identity.isModerator() || identity.hasRole("ROLE_ADMIN")) {
+        if (identity.isMe(thread.author, true) || identity.isModerator(true) || identity.hasRole("ROLE_ADMIN")) {
             await ThreadService.deleteThread(thread);
             reply.send(new HttpMessage("thread.delete"));
         }
@@ -104,5 +110,27 @@ export async function threadsRoute(fastify: FastifyInstance, _: FastifyPluginOpt
     }, async (request: FastifyRequest<{ Params: { id: string } }>, reply) => {
         const result = await ThreadService.downvoteThread(request.params.id, request.payload.id);
         reply.send(result);
+    });
+
+    fastify.post("/:id/comment", {
+        preHandler: [fastify.authenticate],
+        schema: {
+            params: {
+                type: 'object',
+                required: ['id'],
+                properties: {
+                    id: { type: 'string' }
+                }
+            },
+            body: {
+                required: ['body'],
+                properties: {
+                    body: { type: 'string' }
+                }
+            }
+        }
+    }, async (request: FastifyRequest<{ Body: CommentDto, Params: { id: string } }>, reply) => {
+        const comment = await CommentService.createComment(request.params.id, request.body, request.payload.id);
+        reply.status(201).send(comment);
     });
 }

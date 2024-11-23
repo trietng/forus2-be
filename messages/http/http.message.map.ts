@@ -7,7 +7,9 @@ export type HttpMessageKey =
 "box.update" |
 "box.delete" |
 "thread.update" |
-"thread.delete";
+"thread.delete" |
+"comment.update" |
+"comment.delete";
 
 export const HttpMessageMap: Record<HttpMessageKey, string> = {
     "auth.login": "Login successfully",
@@ -18,5 +20,7 @@ export const HttpMessageMap: Record<HttpMessageKey, string> = {
     "box.update": "Box updated successfully",
     "box.delete": "Box deleted successfully",
     "thread.update": "Thread updated successfully",
-    "thread.delete": "Thread deleted successfully"
+    "thread.delete": "Thread deleted successfully",
+    "comment.update": "Comment updated successfully",
+    "comment.delete": "Comment deleted successfully"
 };
