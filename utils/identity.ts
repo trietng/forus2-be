@@ -76,7 +76,6 @@ export class IdentityBuilder {
         return new Identity(this.payload, this.moderators, this.target);
     }
 
-
     static new() {
         return new IdentityBuilder();
     }

@@ -277,14 +277,12 @@ export class ThreadService {
         await thread.save();
     }
 
-    static async deleteThread(id: string) {
+    static async deleteThread(thread: any) {
         const session = await Thread.startSession();
         try {
+            thread.isDeleted = true;
             await session.withTransaction(async () => {
-                const thread = await Thread.findOneAndUpdate({ _id: id, isDeleted: false }, { isDeleted: true }, { session: session });
-                if (!thread) {
-                    throw new BackendError("Resource not found");
-                }
+                await thread.save({ session: session });
                 // remove thread from box
                 await Box.updateOne({ _id: thread.box }, { $pull: { threads: thread._id } }, { session: session });
             });

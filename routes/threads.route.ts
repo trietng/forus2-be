@@ -55,7 +55,7 @@ export async function threadsRoute(fastify: FastifyInstance, _: FastifyPluginOpt
     });
 
     fastify.delete("/:id", { 
-        preHandler: [fastify.authenticate, fastify.isAdmin],
+        preHandler: [fastify.authenticate],
         schema: {
             params: {
                 type: 'object',
@@ -66,8 +66,12 @@ export async function threadsRoute(fastify: FastifyInstance, _: FastifyPluginOpt
             }
         }
     }, async (request: FastifyRequest<{ Params: { id: string } }>, reply) => {
-        await ThreadService.deleteThread(request.params.id);
-        reply.send(new HttpMessage("thread.delete"));
+        const thread = await ThreadService.getThreadByIdWithBox(request.params.id);
+        const identity = IdentityBuilder.new().addPayload(request.payload).addModerators(thread.box.moderators).build();
+        if (identity.isMe(thread.author) || identity.isModerator() || identity.hasRole("ROLE_ADMIN")) {
+            await ThreadService.deleteThread(thread);
+            reply.send(new HttpMessage("thread.delete"));
+        }
     });
 
     fastify.put("/:id/upvote", { 
