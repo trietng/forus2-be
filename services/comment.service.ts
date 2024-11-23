@@ -28,6 +28,7 @@ export class CommentService {
         try {
             const comment = new Comment({
                 body: commentDto.body,
+                replyTo: commentDto.replyTo,
                 author: authorId,
                 thread: threadId,
             });
