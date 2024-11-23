@@ -1,14 +1,12 @@
 import { FastifyInstance, FastifyPluginOptions, FastifyRequest } from "fastify";
-import { Box } from "models/box";
 import { HttpMessage } from "messages";
-import { BackendError } from "errors";
 import { ThreadDto } from "dtos/request/thread.dto";
-import { Thread, ThreadConstraints, ThreadPageSize, ThreadSortableField, ThreadSortableFieldSet } from "models/thread";
+import { ThreadConstraints, ThreadPageSize, ThreadSortableField, ThreadSortableFieldSet } from "models/thread";
 import { SortDirection, SortDirectionSet } from "models/common/sort-option";
 import { BoxService } from "services/box.service";
 import { Validator } from "validators/validator";
 import { boxPatchBodyValidator } from "validators/box.patch-body.validator";
-import { Identity } from "utils/identity";
+import { IdentityBuilder } from "utils/identity";
 import { ThreadService } from "services/thread.service";
 
 export async function boxesRoute(fastify: FastifyInstance, _: FastifyPluginOptions) {
@@ -56,12 +54,13 @@ export async function boxesRoute(fastify: FastifyInstance, _: FastifyPluginOptio
         // Manual validation
         if (Validator.validate(request.body).using(boxPatchBodyValidator)) {
             // if user is admin, continue
-            const identity = Identity.of(request.payload);
+            const identityBuilder = IdentityBuilder.new().addPayload(request.payload);
+            const identity = identityBuilder.build();
             if (identity.hasRole("ROLE_ADMIN", true)) {
                 await BoxService.partialUpdateBox(request.params.id, request.body);
             } else {
                 const box = await BoxService.getBoxById(request.params.id);
-                identity.operateOn(request.body).moderatorOf(box.moderators);
+                const identity = identityBuilder.addTarget(box).addModerators(box.moderators).build();
                 if (identity.isModerator() && identity.doesNotModifyField("name")) {
                     await BoxService.partialUpdateBox(request.params.id, request.body);
                 }

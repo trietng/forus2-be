@@ -3,14 +3,16 @@ import { BackendError } from "errors";
 import { UserRole } from "models/user";
 import { Types } from "mongoose";
 
-export class Identity {
+class Identity {
     private payload: JwtPayloadDto;
     private moderators: Types.ObjectId[];
     private target: any;
     private isModeratorCache?: boolean;
 
-    constructor(payload: JwtPayloadDto) {
+    constructor(payload: JwtPayloadDto, moderators?: Types.ObjectId[], target?: any) {
         this.payload = payload;
+        this.moderators = moderators || [];
+        this.target = target || {};
     }
 
     hasRole(role: UserRole, ignoreError?: boolean) {
@@ -47,18 +49,35 @@ export class Identity {
         }
         return result;
     }
+}
 
-    operateOn(target: any): Identity {
-        this.target = target;
-        return this;
+export class IdentityBuilder {
+    private payload: JwtPayloadDto;
+    private moderators: Types.ObjectId[];
+    private target: any;
+
+    addPayload(payload: JwtPayloadDto) {
+        const builder = new IdentityBuilder();
+        builder.payload = payload;
+        return builder;
     }
 
-    moderatorOf(moderators: Types.ObjectId[]): Identity {
+    addModerators(moderators: Types.ObjectId[]) {
         this.moderators = moderators;
         return this;
     }
 
-    static of(payload: JwtPayloadDto) {
-        return new Identity(payload);
+    addTarget(target: any) {
+        this.target = target;
+        return this;
+    }
+
+    build() {
+        return new Identity(this.payload, this.moderators, this.target);
+    }
+
+
+    static new() {
+        return new IdentityBuilder();
     }
 }

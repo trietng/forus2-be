@@ -2,7 +2,7 @@ import { FastifyInstance, FastifyPluginOptions, FastifyRequest } from "fastify";
 import { HttpMessage } from "messages";
 import { CommentPageSize } from "models/comment";
 import { ThreadService } from "services/thread.service";
-import { Identity } from "utils/identity";
+import { IdentityBuilder } from "utils/identity";
 import { threadPatchBodyValidator } from "validators/thread.patch-body.validator";
 import { Validator } from "validators/validator";
 
@@ -39,7 +39,7 @@ export async function threadsRoute(fastify: FastifyInstance, _: FastifyPluginOpt
         // Manual validation
         if (Validator.validate(request.body).using(threadPatchBodyValidator)) {
             const thread = await ThreadService.getThreadByIdWithBox(request.params.id);
-            const identity = Identity.of(request.payload).operateOn(request.body).moderatorOf(thread.box.moderators);
+            const identity = IdentityBuilder.new().addPayload(request.payload).addTarget(thread).addModerators(thread.box.moderators).build();
             const isAuthor = identity.isMe(thread.author, true);
             const isAdminOrModerator = identity.hasRole("ROLE_ADMIN", true) || identity.isModerator(true);
             // if user is author and does not modify visibility or user is admin or moderator
