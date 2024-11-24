@@ -5,6 +5,7 @@
     "scripts": {
         "build": "tsc --project tsconfig.build.json && tsc-alias -p tsconfig.build.json",
         "start": "tsx main.ts",
+        "start:cloudflare": "FRONTEND_URL=https://forus.trietng.ovh DOMAIN=.trietng.ovh HOST=0.0.0.0 node dist/main.js",
         "dev": "tsx watch main.ts",
         "dev:cloudflare": "set FRONTEND_URL=https://forus.trietng.ovh&& set DOMAIN=.trietng.ovh&& tsx watch main.ts"
     },
