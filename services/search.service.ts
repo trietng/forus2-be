@@ -1,3 +1,4 @@
+import { subscribe } from "diagnostics_channel";
 import { Box } from "models/box";
 import { SearchQuery, SearchResultPageSize } from "models/common/search";
 import { SortUtils } from "models/common/sort-option";
@@ -59,6 +60,9 @@ export class SearchService {
                         $addFields: {
                             threadCount: {
                                 $size: "$threads"
+                            },
+                            subscriberCount: { 
+                                $size: '$subscribers'
                             }
                         }
                     },
@@ -66,7 +70,8 @@ export class SearchService {
                         $project: {
                             _id: 1,
                             name: 1,
-                            threadCount: 1
+                            threadCount: 1,
+                            subscriberCount: 1
                         }
                     },
                     {
