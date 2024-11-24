@@ -1,5 +1,5 @@
 import { FastifyListenOptions } from "fastify";
-import app from "app";
+import app from "api/app";
 
 // env variables check
 let opts: FastifyListenOptions;
