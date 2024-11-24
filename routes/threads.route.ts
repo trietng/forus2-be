@@ -17,7 +17,7 @@ export async function threadsRoute(fastify: FastifyInstance, _: FastifyPluginOpt
                 required: ["id", "page"],
                 properties: {
                     id: { type: "string" },
-                    page: { type: "number" }
+                    page: { type: "number", minimum: 1 }
                 }
             }
         }

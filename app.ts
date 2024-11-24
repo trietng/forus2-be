@@ -15,6 +15,7 @@ import { groupsRoute } from 'routes/groups.route';
 import { boxesRoute } from 'routes/boxes.route';
 import { threadsRoute } from 'routes/threads.route';
 import { commentsRoute } from 'routes/comments.route';
+import { searchRoute } from 'routes/search.route';
 
 declare module 'fastify' {
     interface FastifyRequest {
@@ -105,5 +106,6 @@ app.register(groupsRoute, { prefix: "v1/groups" });
 app.register(boxesRoute, { prefix: "v1/boxes" });
 app.register(threadsRoute, { prefix: "v1/threads" });
 app.register(commentsRoute, { prefix: "v1/comments" });
+app.register(searchRoute, { prefix: "v1/search" });
 
 export default app;

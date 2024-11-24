@@ -18,7 +18,7 @@ export async function boxesRoute(fastify: FastifyInstance, _: FastifyPluginOptio
                 required: ["id", "page"],
                 properties: {
                     id: { type: "string" },
-                    page: { type: "number" }
+                    page: { type: "number", minimum: 1 }
                 }
             },
             querystring: {

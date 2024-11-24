@@ -6,7 +6,7 @@ import { ResizeService } from "services/resize.service";
 export async function resizeRoute(fastify: FastifyInstance, _: FastifyPluginOptions) {
     fastify.register(caching, {
         privacy: caching.privacy.PUBLIC,
-        expiresIn: 86400 // 1 day
+        expiresIn: parseInt(process.env.CACHE_DURATION_RESIZE) // 1 day
     });
 
     fastify.get('/', {
