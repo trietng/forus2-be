@@ -45,14 +45,6 @@ const UserSchema = new Schema<IUser>({
     dateOfBirth: { type: Date },
     avatarUrl: { type: String },
     description: { type: String, maxLength: UserConstraints.description.maxLength, default: '' },
-    threads: {
-        type: [{ type: Schema.Types.ObjectId, ref: "Thread" }],
-        default: [],
-    },
-    comments: {
-        type: [{ type: Schema.Types.ObjectId, ref: "Comment" }],
-        default: [],
-    },
     subscribedBoxes: {
         type: [{ type: Schema.Types.ObjectId, ref: "Box" }],
         default: [],

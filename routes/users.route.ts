@@ -1,5 +1,7 @@
 import { FastifyInstance, FastifyPluginOptions, FastifyRequest } from "fastify";
 import { HttpMessage } from "messages";
+import { SortDirectionSet, SortDirection } from "models/common/sort-option";
+import { ThreadSortableFieldSet, ThreadSortableField, ThreadPageSize } from "models/thread";
 import { UserService } from "services/user.service";
 import { IdentityBuilder } from "utils/identity";
 import { userPatchBodyValidator } from "validators/user.patch-body.validator";
@@ -20,6 +22,26 @@ export async function usersRoute(fastify: FastifyInstance, _: FastifyPluginOptio
     }, async (request: FastifyRequest<{ Params: { id: string } }>, reply) => {
         const user = await UserService.getUser(request.params.id);
         reply.send(user);
+    });
+
+    fastify.get('/:id/threads/:page', {
+        preHandler: [fastify.authenticate],
+        schema: {
+            params: {
+                type: "object",
+                required: ["id", "page"],
+                properties: {
+                    id: { type: "string" },
+                    page: { type: "number", minimum: 1 },
+                }
+            },
+        }
+    }, async (request: FastifyRequest<{ Params: { id: string, page: number } }>, reply) => {
+        const identity = IdentityBuilder.new().addPayload(request.payload).build();
+        if (identity.isMe(request.params.id)) {
+            const threads = await UserService.getThreadsByUserId(request.params.id,  request.params.page);
+            reply.send(threads);
+        }
     });
 
     fastify.patch('/:id', { 

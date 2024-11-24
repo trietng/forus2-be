@@ -1,5 +1,7 @@
 import { BackendError } from "errors";
+import { Thread, ThreadPageSize } from "models/thread";
 import { User } from "models/user";
+import { Types } from "mongoose";
 
 export class UserService {
     static async getUser(id: string) {
@@ -12,5 +14,129 @@ export class UserService {
         if (!result) {
             throw new BackendError("Resource not found");
         }
+    }
+    
+    static async getThreadsByUserId(id: string, page: number) {
+        const userObjectId = new Types.ObjectId(id);
+        const thread = await Thread.aggregate([
+            { $match: { author: userObjectId, isDeleted: false } },
+            {                    
+                $lookup: {
+                    from: 'boxes',
+                    localField: 'box',
+                    foreignField: '_id',
+                    pipeline: [
+                        { $project: { _id: 1, name: 1, moderators: 1 } }
+                    ],
+                    as: 'box'
+                }
+            },
+            {
+                $unwind: "$box"
+            },
+            {
+                $lookup: {
+                    from: "comments",
+                    let: { localComments: "$comments" },
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: {
+                                    $in: ["$_id", "$$localComments"]
+                                }
+                            }
+                        }
+                    ],
+                    as: "comments"
+                },
+            },
+            {
+                $unwind: {
+                    path: "$comments",
+                    preserveNullAndEmptyArrays: true
+                }
+            },
+            {
+                $lookup: {
+                    from: "users",
+                    let: { "id": "$author" },
+                    pipeline: [
+                        { $match: { $expr: { $eq: ["$_id", "$$id"] } } },
+                        { $project: { _id: 1, displayName: 1, avatarUrl: 1, role: 1 } }
+                    ],
+                    as: "author",
+                },
+            },    
+            {
+                $group: {
+                    _id: '$_id',
+                    title: { $first: '$title' },
+                    box: { $first: '$box' },
+                    body: { $first: '$body' },
+                    author: { $first: '$author' },
+                    createdAt: { $first: '$createdAt' },
+                    updatedAt: { $first: '$updatedAt' },
+                    upvoted: { $first: '$upvoted' },
+                    downvoted: { $first: '$downvoted' },
+                    voteStatus: { $first: '$voteStatus' },
+                    visibility: { $first: '$visibility' }
+                }
+            },              
+            {
+                $addFields: {
+                    createdAt: "$createdAt",
+                    updatedAt: "$updatedAt",
+                    score: {
+                        $subtract: [
+                            { $size: '$upvoted' },
+                            { $size: '$downvoted'}
+                        ]
+                    },
+                    commentCount: { $size: '$comments' },
+                    voteStatus: {
+                        $cond: {
+                            if: { $in: [userObjectId, '$upvoted'] },
+                            then: 1,
+                            else: {
+                                $cond: {
+                                    if: { $in: [userObjectId, '$downvoted'] },
+                                    then: -1,
+                                    else: 0
+                                }
+                            }
+                        }
+                    },
+                }
+            },
+            {
+                $project: {
+                    _id: 1,
+                    title: 1,
+                    author: { $arrayElemAt: ['$author', 0] },
+                    body: 1,
+                    box: 1,
+                    createdAt: 1,
+                    updatedAt: 1,
+                    visibility: 1,
+                    score: 1,
+                    commentCount: 1,
+                    voteStatus: 1,
+                    pageCount: 1
+                }
+            }, // sort by createdAt
+            { $sort: { createdAt: -1 } },
+            // slice
+            { $skip: (page - 1) * ThreadPageSize },
+            { $limit: ThreadPageSize }
+        ]);
+        return thread;
+    }
+
+    static async getCommentsByUserId(id: string) {
+
+    }
+
+    static async getSubscribedBoxesByUserId(id: string) {
+
     }
 }
