@@ -3,7 +3,7 @@
     "version": "1.0.0",
     "description": "",
     "scripts": {
-        "build": "tsc",
+        "build": "tsc --project tsconfig.build.json && tsc-alias -p tsconfig.build.json",
         "start": "tsx main.ts",
         "dev": "tsx watch main.ts",
         "dev:cloudflare": "set FRONTEND_URL=https://forus.trietng.ovh&& set DOMAIN=.trietng.ovh&& tsx watch main.ts"
@@ -26,6 +26,7 @@
     "devDependencies": {
         "@types/bcrypt": "^5.0.2",
         "@types/node": "^22.8.6",
+        "tsc-alias": "^1.8.10",
         "tsx": "^4.19.2",
         "typescript": "^5.6.3"
     }

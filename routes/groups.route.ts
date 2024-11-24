@@ -80,6 +80,7 @@ export async function groupsRoute(fastify: FastifyInstance, _: FastifyPluginOpti
                 }
             },
             body: {
+                type: 'object',
                 required: ['name', 'description'],
                 properties: {
                     name: { type: 'string', maxLength: BoxConstraints.name.maxLength },

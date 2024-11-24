@@ -123,6 +123,7 @@ export async function threadsRoute(fastify: FastifyInstance, _: FastifyPluginOpt
                 }
             },
             body: {
+                type: 'object',
                 required: ['body'],
                 properties: {
                     body: { type: 'string' }

@@ -1,4 +1,4 @@
-import Fastify, { FastifyListenOptions, FastifyReply, FastifyRequest } from 'fastify';
+import Fastify, { FastifyReply, FastifyRequest } from 'fastify';
 import jwt, { FastifyJWT, JWT } from '@fastify/jwt';
 import cookie from '@fastify/cookie';
 import cors from '@fastify/cors';
@@ -16,6 +16,7 @@ import { boxesRoute } from 'routes/boxes.route';
 import { threadsRoute } from 'routes/threads.route';
 import { commentsRoute } from 'routes/comments.route';
 import { searchRoute } from 'routes/search.route';
+import { pingRoute } from 'routes/ping.route';
 
 declare module 'fastify' {
     interface FastifyRequest {
@@ -99,6 +100,7 @@ app.decorate('isAdmin', async (request: FastifyRequest, _: FastifyReply) => {
 });
 
 // Register routes
+app.register(pingRoute, { prefix: "ping" });
 app.register(authRoute, { prefix: "v1/auth" });
 app.register(usersRoute, { prefix: "v1/users" });
 app.register(resizeRoute, { prefix: "v1/resize" });

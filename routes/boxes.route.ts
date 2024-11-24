@@ -99,6 +99,7 @@ export async function boxesRoute(fastify: FastifyInstance, _: FastifyPluginOptio
                 }
             },
             body: {
+                type: 'object',
                 required: ['title', 'body'],
                 properties: {
                     title: { type: 'string', maxLength: ThreadConstraints.title.maxLength },
