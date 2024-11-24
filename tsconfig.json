@@ -8,7 +8,7 @@
       "allowSyntheticDefaultImports": true,
       "target": "ES2021",
       "sourceMap": true,
-      "outDir": "./dist/api",
+      "outDir": "./dist",
       "incremental": true,
       "skipLibCheck": true,
       "strictNullChecks": false,
