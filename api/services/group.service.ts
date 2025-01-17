@@ -62,10 +62,11 @@ export class GroupService {
     }
 
     static async updateGroup(id: string, groupDto: GroupDto) {
-        const result = await Group.findOneAndUpdate({ _id: id, isDeleted: false }, groupDto, { new: true });
+        const result = await Group.findOneAndUpdate({ _id: id, isDeleted: false }, { name: groupDto.name }, { new: true });
         if (!result) {
             throw new BackendError("Resource not found");
         }
+        return result;
     }
 
     static async deleteGroup(id: string) {
