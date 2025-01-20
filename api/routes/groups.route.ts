@@ -8,8 +8,8 @@ import { BoxService } from "api/services/box.service";
 import { GroupService } from "api/services/group.service";
 
 export async function groupsRoute(fastify: FastifyInstance, _: FastifyPluginOptions) {
-    fastify.get("/", { preHandler: [fastify.authenticate] }, async (_, reply) => {
-        const groups = await GroupService.getGroups();
+    fastify.get("/", { preHandler: [fastify.authenticate] }, async (request, reply) => {
+        const groups = await GroupService.getGroups(request.payload.id);
         reply.send(groups);
     });
 

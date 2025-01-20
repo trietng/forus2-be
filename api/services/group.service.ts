@@ -5,8 +5,9 @@ import { Group } from "api/models/group";
 import { Types } from "mongoose";
 
 export class GroupService {
-    static async getGroups() {
+    static async getGroups(userId: string) {
         // get all groups with name and the thread count of each box
+        const userObjectId = new Types.ObjectId(userId);
         const groups = await Group.aggregate([
             {
                 $match: { isDeleted: false }
@@ -40,7 +41,14 @@ export class GroupService {
                                     description: '$boxes.description',
                                     status: '$boxes.status',
                                     threadCount: { $size: '$boxes.threads'},
-                                    subscriberCount: { $size: '$boxes.subscribers' }
+                                    subscriberCount: { $size: '$boxes.subscribers' },
+                                    subscriberStatus: {
+                                        $cond: {
+                                            if: { $in: [userObjectId, '$boxes.subscribers'] },
+                                            then: true,
+                                            else: false
+                                        }
+                                    }
                                 },
                                 else: '$boxes'
                             }
