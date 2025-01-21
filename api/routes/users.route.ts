@@ -36,10 +36,32 @@ export async function usersRoute(fastify: FastifyInstance, _: FastifyPluginOptio
         }
     }, async (request: FastifyRequest<{ Params: { id: string, page: number } }>, reply) => {
         const identity = IdentityBuilder.new().addPayload(request.payload).build();
-        if (identity.isMe(request.params.id)) {
-            const threads = await UserService.getThreadsByUserId(request.params.id,  request.params.page);
-            reply.send(threads);
+        let threads = await UserService.getThreadsByUserId(request.params.id,  request.params.page);
+        if (!identity.hasRole("ROLE_ADMIN", true)) {
+            threads.results = threads.results.filter((thread: any) => thread.visibility);
         }
+        reply.send(threads);
+    });
+
+    fastify.get('/:id/comments/:page', {
+        preHandler: [fastify.authenticate],
+        schema: {
+            params: {
+                type: "object",
+                required: ["id", "page"],
+                properties: {
+                    id: { type: "string" },
+                    page: { type: "number", minimum: 1 },
+                }
+            },
+        }
+    }, async (request: FastifyRequest<{ Params: { id: string, page: number } }>, reply) => {
+        const identity = IdentityBuilder.new().addPayload(request.payload).build();
+        let comments = await UserService.getCommentsByUserId(request.params.id,  request.params.page);
+        if (!identity.hasRole("ROLE_ADMIN", true)) {
+            comments.results = comments.results.filter((thread: any) => thread.visibility);
+        }
+        reply.send(comments);
     });
 
     fastify.patch('/:id', { 

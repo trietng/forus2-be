@@ -20,7 +20,7 @@ export class ThreadService {
         const userObjectId = new Types.ObjectId(userId);
         const thread = await Thread.aggregate([
             { $match: { _id: new Types.ObjectId(id), isDeleted: false } },
-            {                    
+            {
                 $lookup: {
                     from: 'boxes',
                     localField: 'box',

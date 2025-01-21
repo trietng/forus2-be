@@ -1,4 +1,5 @@
 import { BackendError } from "api/errors";
+import { Comment, CommentPageSize } from "api/models/comment";
 import { Thread, ThreadPageSize } from "api/models/thread";
 import { User } from "api/models/user";
 import { Types } from "mongoose";
@@ -18,9 +19,12 @@ export class UserService {
     
     static async getThreadsByUserId(id: string, page: number) {
         const userObjectId = new Types.ObjectId(id);
-        const thread = await Thread.aggregate([
+        const totalResults = await Thread.countDocuments({ author: userObjectId, isDeleted: false });
+        const totalPages = Math.ceil(totalResults / ThreadPageSize); 
+        const nextPage = page < totalPages ? page + 1 : null;
+        const threads = await Thread.aggregate([
             { $match: { author: userObjectId, isDeleted: false } },
-            {                    
+            {
                 $lookup: {
                     from: 'boxes',
                     localField: 'box',
@@ -79,7 +83,8 @@ export class UserService {
                     upvoted: { $first: '$upvoted' },
                     downvoted: { $first: '$downvoted' },
                     voteStatus: { $first: '$voteStatus' },
-                    visibility: { $first: '$visibility' }
+                    visibility: { $first: '$visibility' },
+                    comments: { $push: '$comments' }
                 }
             },              
             {
@@ -92,7 +97,13 @@ export class UserService {
                             { $size: '$downvoted'}
                         ]
                     },
-                    commentCount: { $size: '$comments' },
+                    commentCount: {
+                        $cond: {
+                            if: { $ne: ['$comments', {}] },
+                            then: { $size: '$comments' },
+                            else: 0
+                        }
+                    },
                     voteStatus: {
                         $cond: {
                             if: { $in: [userObjectId, '$upvoted'] },
@@ -120,20 +131,76 @@ export class UserService {
                     visibility: 1,
                     score: 1,
                     commentCount: 1,
-                    voteStatus: 1,
-                    pageCount: 1
+                    voteStatus: 1
                 }
-            }, // sort by createdAt
+            },
             { $sort: { createdAt: -1 } },
             // slice
             { $skip: (page - 1) * ThreadPageSize },
             { $limit: ThreadPageSize }
         ]);
-        return thread;
+        return { next: nextPage, results: threads };
     }
 
-    static async getCommentsByUserId(id: string) {
-
+    static async getCommentsByUserId(id: string, page: number) {
+        const userObjectId = new Types.ObjectId(id);
+        const totalResults = await Comment.countDocuments({ author: userObjectId, isDeleted: false });
+        const totalPages = Math.ceil(totalResults / CommentPageSize); 
+        const nextPage = page < totalPages ? page + 1 : null;
+        const comments = await Comment.aggregate([
+            { $match: { author: userObjectId, isDeleted: false } },
+            {
+                $group: {
+                    _id: '$_id',
+                    body: { $first: '$body' },
+                    createdAt: { $first: '$createdAt' },
+                    updatedAt: { $first: '$updatedAt' },
+                    upvoted: { $first: '$upvoted' },
+                    downvoted: { $first: '$downvoted' },
+                    voteStatus: { $first: '$voteStatus' },
+                    visibility: { $first: '$visibility' }
+                }
+            },              
+            {
+                $addFields: {
+                    score: {
+                        $subtract: [
+                            { $size: '$upvoted' },
+                            { $size: '$downvoted'}
+                        ]
+                    },
+                    voteStatus: {
+                        $cond: {
+                            if: { $in: [userObjectId, '$upvoted'] },
+                            then: 1,
+                            else: {
+                                $cond: {
+                                    if: { $in: [userObjectId, '$downvoted'] },
+                                    then: -1,
+                                    else: 0
+                                }
+                            }
+                        }
+                    },
+                }
+            },
+            {
+                $project: {
+                    _id: 1,
+                    body: 1,
+                    createdAt: 1,
+                    updatedAt: 1,
+                    visibility: 1,
+                    score: 1,
+                    voteStatus: 1
+                }
+            },
+            { $sort: { createdAt: -1 } },
+            // slice
+            { $skip: (page - 1) * CommentPageSize },
+            { $limit: CommentPageSize }
+        ]);
+        return { next: nextPage, results: comments };
     }
 
     static async getSubscribedBoxesByUserId(id: string) {
