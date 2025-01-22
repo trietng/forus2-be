@@ -16,6 +16,7 @@ export interface IUser {
     threads: Types.ObjectId[];
     comments: Types.ObjectId[];
     subscribedBoxes: Types.ObjectId[];
+    oneTimeUseToken: string;
 }
 
 export const UserConstraints: Partial<Record<keyof IUser | "password", any>> = {
@@ -41,14 +42,15 @@ const UserSchema = new Schema<IUser>({
     displayName: { type: String, required: true, maxLength: UserConstraints.displayName.maxLength, minLength: UserConstraints.displayName.minLength },
     email: { type: String , required: true, unique: true },
     role: { type: String, required: true, enum: UserRoleSet, default: 'ROLE_USER' },
-    enabled: { type: Boolean, required: true, default: true },
+    enabled: { type: Boolean, required: true, default: false },
     dateOfBirth: { type: Date },
     avatarUrl: { type: String },
     description: { type: String, maxLength: UserConstraints.description.maxLength, default: '' },
     subscribedBoxes: {
         type: [{ type: Schema.Types.ObjectId, ref: "Box" }],
         default: [],
-    }
+    },
+    oneTimeUseToken: { type: String, default: null },
 }, { timestamps: true });
 
 UserSchema.index({ username: "text", fullname: "text" });

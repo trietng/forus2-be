@@ -4,6 +4,7 @@ import { LoginDto } from 'api/dtos/request/login.dto';
 import { RegisterDto } from 'api/dtos/request/register.dto';
 import { BackendError } from 'api/errors';
 import { User } from "api/models/user";
+import { JwtOTUDto, JwtOTUTokenType } from 'api/dtos/request/jwt-otu.dto';
 
 export class AuthService {
     static async register(registerDto: RegisterDto) {
@@ -13,13 +14,25 @@ export class AuthService {
             displayName: registerDto.displayName,
             email: registerDto.email
         });
-        await user.save();
+        try {
+            await user.save();
+        }
+        catch (error) {
+            if (error.code === 11000) {
+                throw new BackendError('Username or email already exists');
+            }
+            throw error;
+        }
+        return user;
     }
 
     static async login(loginDto: LoginDto) {
         const user = await User.findOne({ username: loginDto.username });
         if (!user) {
             throw new BackendError('Invalid username or password');
+        }
+        if (!user.enabled) {
+            throw new BackendError('User not verified');
         }
         const isPasswordValid = await bcrypt.compare(loginDto.password, user.passwordHash);
         if (!isPasswordValid) {
@@ -32,5 +45,18 @@ export class AuthService {
             avatarUrl: user.avatarUrl
         };
         return payload;
+    }
+
+    static async resetPassword(user: any, newPassword: string) {
+        user.passwordHash = await bcrypt.hash(newPassword, parseInt(process.env.SALT_ROUNDS));
+        await user.save();
+    }
+
+    static generateOneTimeUseToken(email: string, tokenType: JwtOTUTokenType) {
+        const otu: JwtOTUDto = {
+            email,
+            tokenType
+        }
+        return otu;
     }
 }

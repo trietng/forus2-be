@@ -17,6 +17,7 @@ import { threadsRoute } from './routes/threads.route';
 import { commentsRoute } from './routes/comments.route';
 import { searchRoute } from './routes/search.route';
 import { pingRoute } from './routes/ping.route';
+import { JwtOTUDto } from './dtos/request/jwt-otu.dto';
 
 declare module 'fastify' {
     interface FastifyRequest {
@@ -31,7 +32,7 @@ declare module 'fastify' {
 
 declare module '@fastify/jwt' {
     interface FastifyJWT {
-        payload: JwtPayloadDto
+        payload: JwtPayloadDto | JwtOTUDto
     }
 }
 
@@ -58,8 +59,8 @@ connect(process.env.MONGODB_URI);
 app.register(cors, {
     delegator: (_: FastifyRequest, callback: (error: Error | null, corsOptions?: FastifyCorsOptions) => void) => {
         const corsOptions: FastifyCorsOptions = {
-        origin: process.env.FRONTEND_URL,
-        credentials: true
+            origin: process.env.FRONTEND_URL,
+            credentials: true
         };
         // if (/^localhost$/m.test(request.headers.origin)) {
         //   corsOptions.origin = false;
