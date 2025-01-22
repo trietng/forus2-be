@@ -4,6 +4,7 @@ import { UserService } from "api/services/user.service";
 import { IdentityBuilder } from "api/utils/identity";
 import { userPatchBodyValidator } from "api/validators/user.patch-body.validator";
 import { Validator } from "api/validators/validator";
+import { BackendError } from "api/errors";
 
 export async function usersRoute(fastify: FastifyInstance, _: FastifyPluginOptions) {    
     fastify.get('/:id', { 
@@ -84,5 +85,42 @@ export async function usersRoute(fastify: FastifyInstance, _: FastifyPluginOptio
                 reply.send(new HttpMessage("user.update"));
             }
         }
+    });
+
+    fastify.put("/:id/ban", { 
+        preHandler: [fastify.authenticate],
+        schema: {
+            params: {
+                type: "object",
+                required: ["id"],
+                properties: {
+                    id: { type: "string" },
+                }
+            }
+        }
+    }, async (request: FastifyRequest<{ Params: { id: string } }>, reply) => {
+        const identity = IdentityBuilder.new().addPayload(request.payload).build();
+        if (identity.isMe(request.params.id)) {
+            throw new BackendError("Self-banning is not allowed");
+        } else {
+            await UserService.banUser(request.params.id);
+        }
+        reply.send(new HttpMessage("user.banned"));
+    });
+
+    fastify.put("/:id/unban", { 
+        preHandler: [fastify.authenticate],
+        schema: {
+            params: {
+                type: "object",
+                required: ["id"],
+                properties: {
+                    id: { type: "string" },
+                }
+            }
+        }
+    }, async (request: FastifyRequest<{ Params: { id: string } }>, reply) => {
+        await UserService.unbanUser(request.params.id);
+        reply.send(new HttpMessage("user.unbanned"));
     });
 }

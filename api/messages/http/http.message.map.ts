@@ -12,7 +12,9 @@ export type HttpMessageKey =
 "comment.delete" | 
 "auth.forgot_password" |
 "auth.reset_password" |
-"auth.verify_email";
+"auth.verify_email" |
+"user.banned" |
+"user.unbanned";
 
 export const HttpMessageMap: Record<HttpMessageKey, string> = {
     "auth.login": "Login successfully",
@@ -28,5 +30,7 @@ export const HttpMessageMap: Record<HttpMessageKey, string> = {
     "comment.delete": "Comment deleted successfully",
     "auth.forgot_password": "Password reset email sent",
     "auth.reset_password": "Password reset successfully",
-    "auth.verify_email": "Email verified successfully"
+    "auth.verify_email": "Email verified successfully",
+    "user.banned": "User banned successfully",
+    "user.unbanned": "User unbanned successfully"
 };

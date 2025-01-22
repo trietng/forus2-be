@@ -10,6 +10,7 @@ export interface IUser {
     email: string;
     role: UserRole;
     enabled: boolean;
+    banned: boolean;
     avatarUrl?: string;
     description?: string;
     dateOfBirth?: Date;
@@ -43,6 +44,7 @@ const UserSchema = new Schema<IUser>({
     email: { type: String , required: true, unique: true },
     role: { type: String, required: true, enum: UserRoleSet, default: 'ROLE_USER' },
     enabled: { type: Boolean, required: true, default: false },
+    banned: { type: Boolean, required: true, default: false },
     dateOfBirth: { type: Date },
     avatarUrl: { type: String },
     description: { type: String, maxLength: UserConstraints.description.maxLength, default: '' },

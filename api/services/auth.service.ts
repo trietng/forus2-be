@@ -34,6 +34,9 @@ export class AuthService {
         if (!user.enabled) {
             throw new BackendError('User not verified');
         }
+        if (user.banned) {
+            throw new BackendError('User is banned');
+        }
         const isPasswordValid = await bcrypt.compare(loginDto.password, user.passwordHash);
         if (!isPasswordValid) {
             throw new BackendError('Invalid username or password');

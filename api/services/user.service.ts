@@ -213,6 +213,25 @@ export class UserService {
     }
 
     static async getSubscribedBoxesByUserId(id: string) {
+        // TODO: Implement this
+    }
 
+    static async banUser(id: string) {
+        const user = await User.findById(id);
+        if (!user) {
+            throw new BackendError("Resource not found");
+        }
+        if (user.role === "ROLE_ADMIN") {
+            throw new BackendError("Admins cannot be banned");
+        }
+        user.banned = true;
+        await user.save();
+    }
+
+    static async unbanUser(id: string) {
+        const user = await User.findByIdAndUpdate(id, { banned: false });
+        if (!user) {
+            throw new BackendError("Resource not found");
+        }
     }
 }

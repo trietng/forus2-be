@@ -14,6 +14,10 @@ async function main() {
     const verifyEmailTemplate = await fs.readFile('templates/verify_email.hbs', 'utf8');
     // Save email templates to database
     // TODO: optimize html by minifying it
+    // delete email templates with the same name
+    await EmailTemplate.deleteOne({ name: EmailTemplateNames.ResetPassword, visibility: false });
+    await EmailTemplate.deleteOne({ name: EmailTemplateNames.VerifyEmail, visibility: false });
+    // create new email templates
     await EmailTemplate.create({ name: EmailTemplateNames.ResetPassword, body: resetPasswordTemplate, visibility: false });
     await EmailTemplate.create({ name: EmailTemplateNames.VerifyEmail, body: verifyEmailTemplate, visibility: false });
 }
